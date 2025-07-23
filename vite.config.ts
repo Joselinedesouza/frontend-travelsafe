@@ -3,13 +3,18 @@ import react from "@vitejs/plugin-react";
 
 export default defineConfig({
   plugins: [react()],
+  resolve: {
+    alias: {
+      './window-config.mjs': '/src/empty-module.js'
+    }
+  },
   define: {
-    global: 'window'  // la tua riga esistente
+    global: 'window'
   },
   server: {
     proxy: {
       '/api': {
-        target: 'http://localhost:8080', // porta backend
+        target: 'http://localhost:8080',
         changeOrigin: true,
         secure: false,
       },
