@@ -1,11 +1,12 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
+import path from 'path';
 
 export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
-      './window-config.mjs': '/src/empty-module.js'
+      './window-config.mjs': path.resolve(__dirname, 'src/empty-module.js')
     }
   },
   define: {
