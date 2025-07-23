@@ -79,6 +79,4 @@ Notifiche in tempo reale: connessione WebSocket (SockJS + STOMP) per ricevere no
 Creato da Joseline De Souza
 Email: joselinedesouza@gmail.com
 Tel: +39 371 359 4430
-
-GitHub frontend: https://github.com/Joselinedesouza/frontend-travelsafe
 GitHub backend: https://github.com/Joselinedesouza/travelsafebackend
