@@ -53,23 +53,30 @@ export default function AdminZoneRischio() {
     setEditingId(null);
   }
 
-  // Salva modifica livello pericolo
-  async function handleUpdate(e: React.FormEvent) {
-    e.preventDefault();
-    if (editingId === null) return;
+  // Salva modifica livello pericolo - correggo invio DTO completo per evitare errori validazione
+ async function handleUpdate(e: React.FormEvent) {
+  e.preventDefault();
+  if (editingId === null) return;
 
-    try {
-      await updateZone(
-        editingId,
-        { id: editingId, livelloPericolo: newLevel } as ZoneRischioForm,
-        token
-      );
-      setEditingId(null);
-      await loadZones(); // Aggiorna dati dopo modifica
-    } catch (e) {
-      alert(e instanceof Error ? e.message : "Errore sconosciuto");
-    }
+  try {
+    // Trova la zona corrente per recuperare i dati completi
+    const zonaDaModificare = zones.find((z) => z.id === editingId);
+    if (!zonaDaModificare) throw new Error("Zona non trovata");
+
+    // Creo un nuovo oggetto aggiornato, mantenendo i dati esistenti e sovrascrivendo solo il livello pericolo
+    const updatedZone: ZoneRischioForm = {
+      ...zonaDaModificare,
+      livelloPericolo: newLevel,
+    };
+
+    await updateZone(editingId, updatedZone, token);
+    setEditingId(null);
+    await loadZones(); // aggiorna i dati
+  } catch (e) {
+    alert(e instanceof Error ? e.message : "Errore sconosciuto");
   }
+}
+
 
   // Elimina zona
   async function handleDelete(id: number) {
@@ -248,7 +255,7 @@ export default function AdminZoneRischio() {
                       <>
                         <button
                           onClick={() => startEdit(z)}
-                          className="bg-azzurro text-white px-3 py-1 rounded hover:bg-azzurro-scuro mr-2"
+                          className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 mr-2"
                         >
                           Modifica
                         </button>

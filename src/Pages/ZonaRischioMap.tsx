@@ -1,5 +1,4 @@
-import { useState, useEffect, useRef, type ChangeEvent} from "react";
-
+import { useState, useEffect, useRef, type ChangeEvent } from "react";
 import { MapContainer, TileLayer, Marker, Popup, Circle, useMap } from "react-leaflet";
 import { Link } from "react-router-dom";
 
@@ -40,7 +39,8 @@ export default function ZonaRischioMapAutocomplete() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const debounceTimer = useRef<NodeJS.Timeout | null>(null);
+  // debounce timer, tipo number per browser
+  const debounceTimer = useRef<number | null>(null);
 
   const gradientBackground = `linear-gradient(
     to right,
@@ -57,7 +57,15 @@ export default function ZonaRischioMapAutocomplete() {
       setError(null);
       try {
         const res = await fetch("/api/zone-rischio/search?lat=45.464211&lng=9.191383&radiusKm=15");
-        if (!res.ok) throw new Error("Errore recupero zone rischio");
+        if (!res.ok) throw new Error(`Errore ${res.status}: ${res.statusText}`);
+
+        const contentType = res.headers.get("content-type");
+        if (!contentType || !contentType.includes("application/json")) {
+          const text = await res.text();
+          console.error("Risposta non JSON dal backend:", text);
+          throw new Error("Risposta dal server non è JSON");
+        }
+
         const zone: ZonaRischio[] = await res.json();
         setZoneRischio(zone);
         setPosizione({ lat: 45.464211, lng: 9.191383 });
@@ -73,8 +81,8 @@ export default function ZonaRischioMapAutocomplete() {
   function onRicercaChange(e: ChangeEvent<HTMLInputElement>) {
     const val = e.target.value;
     setRicerca(val);
-    if (debounceTimer.current) clearTimeout(debounceTimer.current);
-    debounceTimer.current = setTimeout(() => {
+    if (debounceTimer.current) window.clearTimeout(debounceTimer.current);
+    debounceTimer.current = window.setTimeout(() => {
       cercaLuoghi(val);
     }, 500);
   }
@@ -92,6 +100,15 @@ export default function ZonaRischioMapAutocomplete() {
           query
         )}&format=json&limit=5&countrycodes=IT&accept-language=it`
       );
+      if (!res.ok) throw new Error(`Errore ${res.status}: ${res.statusText}`);
+
+      const contentType = res.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        const text = await res.text();
+        console.error("Risposta non JSON da nominatim:", text);
+        throw new Error("Risposta da nominatim non è JSON");
+      }
+
       const dati: NominatimResult[] = await res.json();
       setRisultati(dati);
     } catch (err) {
@@ -111,7 +128,15 @@ export default function ZonaRischioMapAutocomplete() {
     setError(null);
     try {
       const res = await fetch(`/api/zone-rischio/search?lat=${latNum}&lng=${lonNum}&radiusKm=10`);
-      if (!res.ok) throw new Error("Errore recupero zone rischio");
+      if (!res.ok) throw new Error(`Errore ${res.status}: ${res.statusText}`);
+
+      const contentType = res.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        const text = await res.text();
+        console.error("Risposta non JSON dal backend:", text);
+        throw new Error("Risposta dal server non è JSON");
+      }
+
       const zone: ZonaRischio[] = await res.json();
       setZoneRischio(zone);
     } catch (err) {

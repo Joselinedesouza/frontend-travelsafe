@@ -10,7 +10,7 @@ import { AuthProvider } from './Pages/AuthContext'
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <BrowserRouter>
-      <AuthProvider> {/* AVVOLGI qui tutta l’app */}
+      <AuthProvider> 
         <App />
       </AuthProvider>
     </BrowserRouter>

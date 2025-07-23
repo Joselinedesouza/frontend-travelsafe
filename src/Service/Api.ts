@@ -84,7 +84,19 @@ export async function updateZone(id: number, zone: ZoneRischioForm, token: strin
     headers: getHeaders(token),
     body: JSON.stringify(zone),
   });
-  return handleResponse<ZoneRischioForm>(res) as Promise<ZoneRischioForm>;
+
+  if (!res.ok) {
+    let errorMsg = "Errore sconosciuto";
+    try {
+      const errData = await res.json();
+      if (errData.message) errorMsg = errData.message;
+    } catch {
+      // ignora se non JSON
+    }
+    throw new Error(errorMsg);
+  }
+
+  return res.json() as Promise<ZoneRischioForm>;
 }
 
 export async function deleteZone(id: number, token: string): Promise<void> {

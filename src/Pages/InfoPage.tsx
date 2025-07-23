@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
-import { useRealTimePosition } from "../components/RealTimeLocation";
+import { useRealTimePosition } from "../components/RealTimeLocation"; // il tuo hook
 import { useNavigate, Link } from "react-router-dom";
 
 const iconQuestura = new L.Icon({
@@ -48,7 +48,9 @@ export default function InfoPage() {
     }
   }, [navigate]);
 
-  const { position: userPosition } = useRealTimePosition();
+  // Usare il tuo hook personalizzato
+  const { position: userPosition, error: positionError, loading: loadingPosition } = useRealTimePosition();
+
   const [commissariati, setCommissariati] = useState<Commissariato[]>([]);
   const [loadingMap, setLoadingMap] = useState(false);
   const [errorMap, setErrorMap] = useState<string | null>(null);
@@ -115,7 +117,7 @@ export default function InfoPage() {
   }, [userPosition, fetchCommissariati]);
 
   return (
-    <main className="min-h-screen bg-gradient-to-r from-blue-900 to-teal-400 text-white p-6 flex flex-col items-center mt-10 relative">
+    <main className="min-h-screen bg-gradient-to-r from-blue-900 to-teal-400 text-white p-6 flex flex-col items-center relative">
       {/* Bottone Torna alla Home in alto a destra */}
       <div className="fixed top-4 right-6 z-50">
         <Link
@@ -189,6 +191,9 @@ export default function InfoPage() {
         {loadingMap && <p>Caricamento mappa commissariati...</p>}
         {errorMap && <p className="text-red-600">{errorMap}</p>}
 
+        {positionError && <p className="text-red-600 mb-2">Errore geolocalizzazione: {positionError}</p>}
+        {loadingPosition && <p>Recupero posizione utente in corso...</p>}
+
         {userPosition ? (
           <MapContainer
             center={[userPosition.lat, userPosition.lng]}
@@ -200,48 +205,41 @@ export default function InfoPage() {
 
             <Marker
               position={[userPosition.lat, userPosition.lng]}
-              icon={
-                new L.Icon({
-                  iconUrl: "/user-location.png",
-                  iconSize: [25, 25],
-                  iconAnchor: [12, 25],
-                  popupAnchor: [0, -25],
-                })
-              }
+            
             >
               <Popup>Sei qui</Popup>
             </Marker>
 
-         {commissariati.map((c) => (
-  <Marker
-    key={c.id}
-    position={[c.lat, c.lng]}
-    icon={iconQuestura}
-    title={c.nome} // aggiunta aria-label per accessibilità
-  >
-    <Popup>
-      {c.nome}
-      <br />
-      {c.aperturaH24 ? (
-        <span className="font-semibold text-green-600">Aperto 24h</span>
-      ) : (
-        <span className="font-semibold text-red-600">Orari limitati</span>
-      )}
-      <br />
-      <a
-        href={`https://www.google.com/maps/dir/?api=1&origin=${userPosition.lat},${userPosition.lng}&destination=${c.lat},${c.lng}&travelmode=driving`}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="mt-2 inline-block px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
-      >
-        Mostra indicazioni
-      </a>
-    </Popup>
-  </Marker>
-))}
+            {commissariati.map((c) => (
+              <Marker
+                key={c.id}
+                position={[c.lat, c.lng]}
+                icon={iconQuestura}
+                title={c.nome}
+              >
+                <Popup>
+                  {c.nome}
+                  <br />
+                  {c.aperturaH24 ? (
+                    <span className="font-semibold text-green-600">Aperto 24h</span>
+                  ) : (
+                    <span className="font-semibold text-red-600">Orari limitati</span>
+                  )}
+                  <br />
+                  <a
+                    href={`https://www.google.com/maps/dir/?api=1&origin=${userPosition.lat},${userPosition.lng}&destination=${c.lat},${c.lng}&travelmode=driving`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-2 inline-block px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+                  >
+                    Mostra indicazioni
+                  </a>
+                </Popup>
+              </Marker>
+            ))}
           </MapContainer>
         ) : (
-          <p>Caricamento posizione utente...</p>
+          !positionError && !loadingPosition && <p>Caricamento posizione utente...</p>
         )}
       </section>
     </main>

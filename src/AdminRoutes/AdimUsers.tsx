@@ -32,44 +32,43 @@ export default function AdminUsers() {
     loadUsers();
   }, [loadUsers]);
 
-  async function handleDeactivate(id: number) {
-    const motivo = prompt("Inserisci il motivo della disattivazione:");
-    if (!motivo) return;
+ async function handleDeactivate(id: number) {
+  const motivo = prompt("Inserisci il motivo della disattivazione:");
+  if (!motivo) return;
 
-    try {
-      await deactivateUser(id, { motivo }, token);
-      alert("Utente disattivato e mail inviata.");
-      await loadUsers();
-    } catch (e) {
-      alert(e instanceof Error ? e.message : "Errore disattivazione");
-    }
+  try {
+    await deactivateUser(id, { motivo }, token);
+    alert("Utente disattivato e mail inviata.");
+    await loadUsers(); // Ricarica utenti dopo modifica
+  } catch (e) {
+    alert(e instanceof Error ? e.message : "Errore disattivazione");
   }
+}
 
-  async function handleActivate(id: number) {
-    const motivo = prompt("Inserisci il motivo della riattivazione:");
-    if (!motivo) return;
+async function handleActivate(id: number) {
+  const motivo = prompt("Inserisci il motivo della riattivazione:");
+  if (!motivo) return;
 
-    try {
-      await activateUser(id, { motivo }, token);
-      alert("Utente riattivato e mail inviata.");
-      await loadUsers();
-    } catch (e) {
-      alert(e instanceof Error ? e.message : "Errore riattivazione");
-    }
+  try {
+    await activateUser(id, { motivo }, token);
+    alert("Utente riattivato e mail inviata.");
+    await loadUsers(); // Ricarica utenti dopo modifica
+  } catch (e) {
+    alert(e instanceof Error ? e.message : "Errore riattivazione");
   }
+}
 
-  async function handleDelete(id: number) {
-    if (!window.confirm("Sei sicuro di voler eliminare l'utente?")) return;
+async function handleDelete(id: number) {
+  if (!window.confirm("Sei sicuro di voler eliminare l'utente?")) return;
 
-    try {
-      await deleteUser(id, token);
-      alert("Utente eliminato.");
-      await loadUsers();
-    } catch (e) {
-      alert(e instanceof Error ? e.message : "Errore eliminazione");
-    }
+  try {
+    await deleteUser(id, token);
+    alert("Utente eliminato.");
+    await loadUsers(); // Ricarica utenti dopo cancellazione
+  } catch (e) {
+    alert(e instanceof Error ? e.message : "Errore eliminazione");
   }
-
+}
   return (
     <div className="p-4 mt-5">
       <h1 className="text-2xl font-bold mb-6">Gestione Utenti</h1>

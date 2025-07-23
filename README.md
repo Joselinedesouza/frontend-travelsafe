@@ -1,17 +1,23 @@
 🚀 TravelSafe - Web Application
+Backend GitHub repository:
+https://github.com/Joselinedesouza/travelsafebackend
 
 📖 Descrizione
-TravelSafe è un'applicazione web full-stack pensata per aiutare i turisti a muoversi in sicurezza, fornendo informazioni sulle zone a rischio, recensioni, e registrazione dei viaggi con supporto alle emergenze.
+TravelSafe è un'applicazione web full-stack che ho creato per aiutare i turisti a muoversi in sicurezza, fornendo informazioni sulle zone a rischio, recensioni e la registrazione dei viaggi con supporto alle emergenze. Ho deciso di realizzare questa app perché più volte mi sono trovata in situazioni in cui non sapevo esattamente dove fossi e provavo una forte sensazione di insicurezza e paura nel viaggiare da sola.
+
+Spero che questa applicazione possa tornare utile a chi viaggia spesso, sia per lavoro che per passione e curiosità. Da oggi, tutti noi potremo viaggiare con una sicurezza in più, affrontando ogni esperienza con maggiore consapevolezza.
+
+Che il tuo prossimo viaggio sia sempre una splendida avventura, con TravelSafe al tuo fianco per proteggerti, e tu libero di vivere ogni istante in modo unico e indimenticabile.
 
 🛠️ Tecnologie utilizzate
 Backend
 Java 21 con Spring Boot 3.5.3
 
-Spring Security con JWT e OAuth2 Client (Google login)
+Spring Security con JWT e OAuth2 Client (login Google)
 
 Spring Data JPA con PostgreSQL
 
-Validation per validazione dati
+Validation per la validazione dati
 
 Spring WebSocket con STOMP e SockJS per notifiche in tempo reale
 
@@ -29,27 +35,6 @@ DevTools per reload automatico in sviluppo
 
 Test con Spring Boot Starter Test e Security Test
 
----
-
-🔥 Funzionalità principali
-Autenticazione: login, registrazione, reset password, login con Google OAuth2
-
-Gestione utenti: visualizzazione, attivazione/disattivazione, cancellazione
-
-Zone a rischio: visualizzazione su mappa, ricerca per posizione, creazione/modifica/eliminazione
-
-Recensioni: creazione, modifica, cancellazione e risposta da parte admin
-
-Notifiche: ricezione in tempo reale tramite WebSocket con SockJS e STOMP
-
-Registrazione viaggi: form con geolocalizzazione e mappa interattiva
-
-Upload immagini profilo tramite Cloudinary
-
-Documentazione API con OpenAPI UI
-
----
-
 Frontend
 React.js + TypeScript
 
@@ -65,23 +50,22 @@ API REST per comunicazione con backend
 
 WebSocket per notifiche in tempo reale
 
----
-
 💻 Funzionamento Frontend
+Ho realizzato il frontend come Single Page Application (SPA) con React.js e TypeScript, pensata per offrire un’esperienza utente fluida, intuitiva e reattiva.
 
-Il frontend di TravelSafe è una Single Page Application (SPA) realizzata con React.js e TypeScript, pensata per offrire un’esperienza utente fluida, intuitiva e reattiva.
+Architettura e struttura:
 
-Architettura e struttura
-Routing: gestito con React Router, consente di navigare tra le pagine senza ricaricare l’intera app. Le pagine principali includono: Home, Registrazione Viaggio, Gestione Recensioni, Profilo Utente, Login/Registrazione/Reset Password.
+Routing con React Router, per navigare tra le pagine senza ricaricare l’intera app.
 
-Componenti: l’app è suddivisa in componenti modulari e riutilizzabili, organizzati nelle cartelle /Pages e /components per facilitare manutenzione e scalabilità.
+Componenti modulari e riutilizzabili organizzati nelle cartelle /Pages e /components.
 
-Styling: utilizzo di Tailwind CSS per uno stile moderno, coerente e mobile-first, con gestione dinamica di temi e gradienti.
+Styling moderno e responsive con Tailwind CSS, mobile-first, con gestione dinamica di temi e gradienti.
 
-Funzionalità principali
-Autenticazione: login e registrazione tramite form, con integrazione Google OAuth2 per accesso rapido. Lo stato di autenticazione è gestito con Context API e token JWT salvato in localStorage.
+Funzionalità principali:
 
-Gestione Viaggi: form con campi dinamici e autocomplete geolocalizzato tramite API Nominatim, mappa interattiva con Leaflet per selezione e visualizzazione.
+Autenticazione: login e registrazione tramite form, con integrazione Google OAuth2 per accesso rapido. Stato di autenticazione gestito con Context API e token JWT salvato in localStorage.
+
+Gestione Viaggi: form con campi dinamici e autocomplete geolocalizzato tramite API Nominatim, mappa interattiva con Leaflet.
 
 Zone a Rischio: visualizzazione interattiva di zone geolocalizzate a rischio tramite cerchi colorati su mappa Leaflet, con ricerca città autocomplete.
 
@@ -91,42 +75,10 @@ Profilo Utente: visualizzazione e modifica dati profilo, upload e anteprima imma
 
 Notifiche in tempo reale: connessione WebSocket (SockJS + STOMP) per ricevere notifiche push senza ricaricare la pagina.
 
-Comunicazione con backend
-Tutte le chiamate API REST sono gestite tramite funzioni dedicate in /Service, che gestiscono token JWT, autorizzazioni e errori in modo centralizzato.
-
-⚙️ Setup e configurazione
-Backend
-Assicurati di avere Java 21 e Maven installati
-
-Configura il database PostgreSQL e aggiorna application.properties o application.yml con le tue credenziali
-
-Imposta variabili ambiente per Cloudinary e email (se usi)
-
-Esegui:
-
-bash
-Copia
-mvn clean install
-mvn spring-boot:run
-L'API sarà disponibile di default su http://localhost:8080
-
-Frontend
-Assicurati di avere Node.js e npm installati
-
-Esegui:
-
-bash
-Copia
-npm install
-npm run dev
-L'app frontend sarà disponibile su http://localhost:5173 (Vite default)
-
 📞 Contatti
 Creato da Joseline De Souza
+Email: joselinedesouza@gmail.com
+Tel: +39 371 359 4430
 
-GitHub https://github.com/Joselinedesouza/frontend-travelsafe
-
-GitHub Backend (aggiungi se esiste)
-
-🤝 Ringraziamenti
-Grazie a tutti i progetti open source e alle community che hanno reso possibile questo sviluppo! 🙌
+GitHub frontend: https://github.com/Joselinedesouza/frontend-travelsafe
+GitHub backend: https://github.com/Joselinedesouza/travelsafebackend

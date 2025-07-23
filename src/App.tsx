@@ -33,18 +33,20 @@ import { AdminNotifiche } from "./AdminRoutes/AdminNotifiche";
 import { OAuth2Callback } from "./Pages/OAuth2Callback";
 
 function App() {
-  const [token, setToken] = useState(localStorage.getItem("token"));
-  const [role, setRole] = useState(localStorage.getItem("role")); // puoi usarlo per logiche future
+  const [token, setToken] = useState<string | null>(null);
+  const [role, setRole] = useState<string | null>(null);
+  const [loadingAuth, setLoadingAuth] = useState(true);
 
   useEffect(() => {
-    const onStorage = () => {
-      setToken(localStorage.getItem("token"));
-      setRole(localStorage.getItem("role"));
-    };
-    window.addEventListener("storage", onStorage);
-    return () => window.removeEventListener("storage", onStorage);
+    // Leggi token e ruolo da localStorage all'avvio
+    const t = localStorage.getItem("token");
+    const r = localStorage.getItem("role");
+    setToken(t);
+    setRole(r);
+    setLoadingAuth(false);
   }, []);
 
+  // Funzione per logout: pulisce tutto
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("role");
@@ -53,24 +55,52 @@ function App() {
     setRole(null);
   };
 
-  // Mostra TopBarHome SOLO se token esiste E ruolo NON è ADMIN (puoi adattare)
-  const showTopBar = token && role !== "ADMIN";
+  // Mostra TopBarHome solo se c'è token e ruolo diverso da ADMIN
+  const showTopBar = token !== null && role !== "ADMIN";
+
+  if (loadingAuth) {
+    // Mostra loader finché leggi token/ruolo
+    return (
+      <div className="flex items-center justify-center min-h-screen text-xl font-bold text-gray-700">
+        Caricamento...
+      </div>
+    );
+  }
 
   return (
     <>
       {showTopBar && <TopBarHome onLogout={handleLogout} />}
 
       <Routes>
-        {/* Homepage: se loggato -> /home, altrimenti landing */}
-        <Route path="/" element={token ? <Navigate to="/home" /> : <LandingPage />} />
+        {/* Landing o redirect a dashboard/admin o home utente */}
+        <Route
+          path="/"
+          element={
+            token ? (
+              role === "ADMIN" ? (
+                <Navigate to="/admin/dashboard" replace />
+              ) : (
+                <Navigate to="/home" replace />
+              )
+            ) : (
+              <LandingPage />
+            )
+          }
+        />
 
-        {/* Home: solo accessibile con token */}
-        <Route path="/home" element={token ? <Home /> : <Navigate to="/" />} />
+        {/* Home: protetta da login */}
+        <Route
+          path="/home"
+          element={token ? <Home /> : <Navigate to="/" replace />}
+        />
 
         {/* Logout */}
         <Route path="/logout" element={<Logout onLogout={handleLogout} />} />
 
-        {/* Rotte admin protette */}
+        {/* OAuth2 callback */}
+        <Route path="/login/oauth2/code/google" element={<OAuth2Callback />} />
+
+        {/* Rotte protette admin */}
         <Route element={<AdminRoute />}>
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
           <Route path="/admin/reviews" element={<AdminReviews />} />
@@ -78,25 +108,24 @@ function App() {
           <Route path="/admin/notifiche" element={<AdminNotifiche />} />
         </Route>
 
-        {/* Zona Rischio mappa pubblica */}
+        {/* Rotte pubbliche o protette */}
         <Route path="/zone-rischio" element={<ZonaRischioMap />} />
-
-        {/* Viaggi */}
         <Route path="/register-trip" element={<RegisterTripForm />} />
         <Route path="/my-trips" element={<MyTrips />} />
 
-        {/* Autenticazione - Login SENZA onLogin */}
+        {/* Autenticazione */}
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
-        
-<Route path="/login/oauth2/code/google" element={<OAuth2Callback />} />
 
         {/* Profilo utente */}
-        <Route path="/userprofile" element={token ? <UserProfile /> : <Navigate to="/" />} />
+        <Route
+          path="/userprofile"
+          element={token ? <UserProfile /> : <Navigate to="/" replace />}
+        />
 
-        {/* Rotte protette per utenti loggati */}
+        {/* Rotte protette utenti loggati */}
         <Route element={<ProtectedRoute />}>
           <Route path="/recensioni" element={<Recensioni />} />
         </Route>
@@ -109,8 +138,8 @@ function App() {
         <Route path="/guida-supporto" element={<GuidaSupporto />} />
         <Route path="/elimina-profilo" element={<EliminaProfilo />} />
 
-        {/* Catch all */}
-        <Route path="*" element={<Navigate to="/" />} />
+        {/* Catch all - redirect a landing */}
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </>
   );

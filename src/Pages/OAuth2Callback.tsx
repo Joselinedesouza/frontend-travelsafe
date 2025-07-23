@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { useAuth } from "../Service/useAuth";
+import { useAuth } from "../Pages/AuthContext"; // correzione import
 
 export function OAuth2Callback() {
   const [error, setError] = useState<string | null>(null);
@@ -22,7 +22,6 @@ export function OAuth2Callback() {
       return;
     }
 
-    // Scambia il codice con il token chiamando il backend
     async function fetchToken() {
       try {
         const response = await fetch(
@@ -33,26 +32,17 @@ export function OAuth2Callback() {
           }
         );
 
+        const data = await response.json();
+
         if (!response.ok) {
-          const data = await response.json();
           throw new Error(data.message || "Errore durante l'autenticazione OAuth2");
         }
 
-        const data = await response.json();
-
-if (!response.ok) {
-  throw new Error(data.message || "Errore durante l'autenticazione OAuth2");
-}
-        // Salva dati nel context/localStorage
-        localStorage.setItem("token", data.token);
-        localStorage.setItem("userEmail", data.email);
-        localStorage.setItem("role", data.role);
-
+        // Non serve salvare localStorage qui, lo fa AuthProvider con useEffect
         setToken(data.token);
         setUserEmail(data.email);
         setRole(data.role);
 
-        // Redirect alla home
         navigate("/home");
       } catch (err: unknown) {
         if (err instanceof Error) setError(err.message);

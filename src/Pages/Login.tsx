@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useAuth } from "../Service/useAuth";
+import { useAuth } from "../Pages/AuthContext";
 
 export const Login = () => {
   const [formData, setFormData] = useState({ email: "", password: "" });
@@ -8,7 +8,16 @@ export const Login = () => {
   const [showForm, setShowForm] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-  const { setToken, setUserEmail, setRole } = useAuth();
+  const { role, setToken, setUserEmail, setRole } = useAuth();
+
+  // Redirect immediato se ruolo già presente (utente loggato)
+  useEffect(() => {
+    if (role === "ADMIN") {
+      navigate("/admin/dashboard");
+    } else if (role) {
+      navigate("/home");
+    }
+  }, [role, navigate]);
 
   useEffect(() => {
     const timer = setTimeout(() => setShowForm(true), 2000);
@@ -38,19 +47,19 @@ export const Login = () => {
         throw new Error(data.message || "Errore durante il login");
       }
 
-      // Salvo dati in localStorage e nel context
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("userEmail", data.email);
-      localStorage.setItem("role", data.role);
-
+      // Salvo token e dati
       setToken(data.token);
       setUserEmail(data.email);
       setRole(data.role);
 
       setIsLoading(false);
 
-      // Redirect sempre alla home page
-      navigate("/home");
+      // Redirect basato sul ruolo
+      if (data.role === "ADMIN") {
+        navigate("/admin/dashboard");
+      } else {
+        navigate("/home");
+      }
     } catch (err: unknown) {
       setIsLoading(false);
       if (err instanceof Error) setError(err.message);

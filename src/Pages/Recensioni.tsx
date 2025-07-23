@@ -186,255 +186,259 @@ export default function Recensioni() {
 
   return (
     <div
-      className="min-h-screen p-6 text-[#e0f2f1]"
-      style={{ background: "linear-gradient(90deg, #003f66, #66a7a3)" }}
+  className="min-h-screen p-4 sm:p-6 text-[#e0f2f1] bg-gradient-to-r from-[#003f66] to-[#66a7a3]"
+>
+  <header className="flex justify-end mb-6 px-2 sm:px-0">
+    <Link
+      to="/home"
+      className="text-[#e0f2f1] font-semibold underline hover:text-[#80cbc4]"
     >
-      <header className="flex justify-end mb-6">
-        <Link
-          to="/home"
-          className="text-[#e0f2f1] font-semibold underline hover:text-[#80cbc4]"
-        >
-          Torna alla Home
-        </Link>
-      </header>
+      Torna alla Home
+    </Link>
+  </header>
 
-      <div
-        className="max-w-4xl mx-auto rounded-md mt-8 shadow-lg p-6"
-        style={{ backgroundColor: "rgba(0, 0, 0, 0.3)" }}
+  <div
+    className="max-w-full sm:max-w-md md:max-w-4xl mx-auto rounded-md shadow-lg p-4 sm:p-6"
+    style={{ backgroundColor: "rgba(0, 0, 0, 0.3)" }}
+  >
+    <h1 className="text-3xl font-bold mb-6 text-center">Recensioni</h1>
+
+    {/* filtro */}
+    <div className="mb-6 px-2 sm:px-0">
+      <label className="block mb-2 font-semibold">Filtra recensioni per città:</label>
+      <select
+        value={filterCityId}
+        onChange={(e) =>
+          setFilterCityId(e.target.value === "" ? "" : Number(e.target.value))
+        }
+        className="p-2 rounded text-[#e0f2f1] border border-white w-full max-w-xs"
+        style={{ backgroundColor: "#003f66", transition: "background-color 0.3s" }}
+        onMouseEnter={addHoverFocusStyles}
+        onMouseLeave={addHoverFocusStyles}
+        onFocus={addHoverFocusStyles}
+        onBlur={addHoverFocusStyles}
       >
-        <h1 className="text-3xl font-bold mb-6 text-center">Recensioni</h1>
+        <option value="">Tutte le città</option>
+        {cities.map((c) => (
+          <option key={c.id} value={c.id}>
+            {c.nome}
+          </option>
+        ))}
+      </select>
+    </div>
 
-        <div className="mb-6">
-          <label className="block mb-2 font-semibold">Filtra recensioni per città:</label>
-          <select
-            value={filterCityId}
-            onChange={(e) =>
-              setFilterCityId(e.target.value === "" ? "" : Number(e.target.value))
-            }
-            className="p-2 rounded text-[#e0f2f1] border border-white"
-            style={{ backgroundColor: "#003f66", transition: "background-color 0.3s" }}
-            onMouseEnter={addHoverFocusStyles}
-            onMouseLeave={addHoverFocusStyles}
-            onFocus={addHoverFocusStyles}
-            onBlur={addHoverFocusStyles}
-          >
-            <option value="">Tutte le città</option>
-            {cities.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.nome}
-              </option>
-            ))}
-          </select>
-        </div>
+    {/* recensioni di tutti */}
+    <h2 className="text-xl font-semibold mb-4">Recensioni di tutti</h2>
+    {loading && <p>Caricamento...</p>}
+    {error && <p className="text-red-600 mb-4">{error}</p>}
 
-        <h2 className="text-xl font-semibold mb-4">Recensioni di tutti</h2>
-        {loading && <p>Caricamento...</p>}
-        {error && <p className="text-red-600 mb-4">{error}</p>}
+    {filteredReviews.length === 0 && !loading && (
+      <p className="mb-8 text-center">Nessuna recensione disponibile.</p>
+    )}
 
-        {filteredReviews.length === 0 && !loading && (
-          <p className="mb-8 text-center">Nessuna recensione disponibile.</p>
-        )}
-
-        <ul className="mb-8 space-y-4 max-h-[300px] overflow-y-auto scroll-hidden border border-white rounded-md p-2">
-          {filteredReviews.map((r) => (
-            <li
-              key={r.id}
-              className="p-4 border rounded bg-[#003f66] shadow flex flex-col border-white"
-            >
-              <div className="flex justify-between items-center mb-2">
-                <h3 className="font-semibold text-xl">{r.cittaNome}</h3>
-                <StarRating rating={r.voto} onChange={() => {}} />
-              </div>
-              <p className="italic text-gray-300 mb-2">{r.testo}</p>
-              <small className="text-gray-400">
-                {new Date(r.dataCreazione).toLocaleDateString()}
-              </small>
-              <small className="text-gray-400 italic"> - da: {r.autoreEmail}</small>
-            </li>
-          ))}
-        </ul>
-
-        <h2 className="text-xl font-semibold mb-4">Le mie recensioni</h2>
-        {myReviews.length === 0 && !loading && (
-          <p className="mb-8 text-center">Non hai ancora lasciato recensioni.</p>
-        )}
-
-        <ul className="mb-8 space-y-4 max-h-[300px] overflow-y-auto scroll-hidden border border-white rounded-md p-2">
-          {myReviews.map((r) => (
-            <li
-              key={r.id}
-              className="p-4 border rounded bg-[#003f66] shadow flex flex-col border-white"
-            >
-              <div className="flex justify-between items-center mb-2">
-                <h3 className="font-semibold text-xl">{r.cittaNome}</h3>
-                <StarRating rating={r.voto} onChange={() => {}} />
-              </div>
-              <p className="italic text-gray-300 mb-2">{r.testo}</p>
-              <small className="text-gray-400">
-                {new Date(r.dataCreazione).toLocaleDateString()}
-              </small>
-              <div className="mt-2 space-x-2">
-                <button
-                  onClick={() => startEdit(r)}
-                  className="px-3 py-1 rounded"
-                  style={{
-                    backgroundColor: "#80cbc4",
-                    color: "#003f66",
-                    transition: "background-color 0.3s",
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#a6d6d1")}
-                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#80cbc4")}
-                  onFocus={(e) => (e.currentTarget.style.backgroundColor = "#a6d6d1")}
-                  onBlur={(e) => (e.currentTarget.style.backgroundColor = "#80cbc4")}
-                >
-                  Modifica
-                </button>
-                <button
-                  onClick={() => handleDelete(r.id)}
-                  className="px-3 py-1 rounded"
-                  style={{
-                    backgroundColor: "#80cbc4",
-                    color: "#003f66",
-                    transition: "background-color 0.3s",
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#a6d6d1")}
-                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#80cbc4")}
-                  onFocus={(e) => (e.currentTarget.style.backgroundColor = "#a6d6d1")}
-                  onBlur={(e) => (e.currentTarget.style.backgroundColor = "#80cbc4")}
-                >
-                  Elimina
-                </button>
-              </div>
-            </li>
-          ))}
-        </ul>
-
-        {/* Form inserimento/modifica recensione */}
-        <form
-          onSubmit={handleCreateOrUpdate}
-          className="bg-[#003f66] p-6 rounded shadow space-y-4 border border-white"
-          style={{ backgroundColor: "rgba(0, 63, 102, 0.85)" }}
+    <ul className="mb-8 space-y-4 max-h-72 sm:max-h-96 overflow-y-auto scroll-hidden border border-white rounded-md p-2">
+      {filteredReviews.map((r) => (
+        <li
+          key={r.id}
+          className="p-4 border rounded bg-[#003f66] shadow flex flex-col border-white"
         >
-          <h2 className="text-xl font-semibold">
-            {editingId ? "Modifica recensione" : "Aggiungi nuova recensione"}
-          </h2>
+          <div className="flex justify-between items-center mb-2 flex-wrap">
+            <h3 className="font-semibold text-xl">{r.cittaNome}</h3>
+            <StarRating rating={r.voto} onChange={() => {}} />
+          </div>
+          <p className="italic text-gray-300 mb-2">{r.testo}</p>
+          <small className="text-gray-400">
+            {new Date(r.dataCreazione).toLocaleDateString()}
+          </small>
+          <small className="text-gray-400 italic"> - da: {r.autoreEmail}</small>
+        </li>
+      ))}
+    </ul>
 
-          <select
-            value={newReview.cittaId ?? ""}
-            onChange={(e) =>
-              setNewReview((prev) => ({ ...prev, cittaId: Number(e.target.value) }))
-            }
-            required
-            className="w-full p-2 rounded text-[#e0f2f1] border border-white"
-            style={{ backgroundColor: "#003f66", transition: "background-color 0.3s" }}
-            onMouseEnter={addHoverFocusStyles}
-            onMouseLeave={addHoverFocusStyles}
-            onFocus={addHoverFocusStyles}
-            onBlur={addHoverFocusStyles}
-          >
-            <option value="" disabled>
-              Seleziona città
-            </option>
-            {cities.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.nome}
-              </option>
-            ))}
-          </select>
+    {/* recensioni mie */}
+    <h2 className="text-xl font-semibold mb-4">Le mie recensioni</h2>
+    {myReviews.length === 0 && !loading && (
+      <p className="mb-8 text-center">Non hai ancora lasciato recensioni.</p>
+    )}
 
-          <textarea
-            value={newReview.testo}
-            onChange={(e) => setNewReview((prev) => ({ ...prev, testo: e.target.value }))}
-            required
-            placeholder="Scrivi la tua recensione"
-            className="w-full p-2 rounded text-[#e0f2f1] border border-white h-24"
-            style={{ backgroundColor: "#003f66" }}
-          />
-
-          <label className="block text-white">
-            Voto:{" "}
-            <StarRating
-              rating={newReview.voto}
-              onChange={(val) => setNewReview((prev) => ({ ...prev, voto: val }))}
-            />
-          </label>
-
-          <div className="flex justify-between space-x-2">
+    <ul className="mb-8 space-y-4 max-h-72 sm:max-h-96 overflow-y-auto scroll-hidden border border-white rounded-md p-2">
+      {myReviews.map((r) => (
+        <li
+          key={r.id}
+          className="p-4 border rounded bg-[#003f66] shadow flex flex-col border-white"
+        >
+          <div className="flex justify-between items-center mb-2 flex-wrap">
+            <h3 className="font-semibold text-xl">{r.cittaNome}</h3>
+            <StarRating rating={r.voto} onChange={() => {}} />
+          </div>
+          <p className="italic text-gray-300 mb-2">{r.testo}</p>
+          <small className="text-gray-400">
+            {new Date(r.dataCreazione).toLocaleDateString()}
+          </small>
+          <div className="mt-2 space-x-2 flex flex-wrap gap-2">
             <button
-              type="submit"
-              className="transition-colors px-4 py-2 rounded font-bold text-[#003f66]"
+              onClick={() => startEdit(r)}
+              className="px-3 py-1 rounded"
               style={{
-                background: "linear-gradient(90deg, #80cbc4, #66a7a3)",
-                width: "auto",
+                backgroundColor: "#80cbc4",
+                color: "#003f66",
+                transition: "background-color 0.3s",
               }}
-              onMouseEnter={(e) =>
-                (e.currentTarget.style.background = "linear-gradient(90deg, #a6d6d1, #80cbc4)")
-              }
-              onMouseLeave={(e) =>
-                (e.currentTarget.style.background = "linear-gradient(90deg, #80cbc4, #66a7a3)")
-              }
-              onFocus={(e) =>
-                (e.currentTarget.style.background = "linear-gradient(90deg, #a6d6d1, #80cbc4)")
-              }
-              onBlur={(e) =>
-                (e.currentTarget.style.background = "linear-gradient(90deg, #80cbc4, #66a7a3)")
-              }
+              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#a6d6d1")}
+              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#80cbc4")}
+              onFocus={(e) => (e.currentTarget.style.backgroundColor = "#a6d6d1")}
+              onBlur={(e) => (e.currentTarget.style.backgroundColor = "#80cbc4")}
             >
-              {editingId ? "Aggiorna recensione" : "Invia recensione"}
+              Modifica
             </button>
-
             <button
-              type="button"
-              onClick={() => navigate("/home")}
-              className="transition-colors px-4 py-2 rounded font-bold text-[#003f66]"
+              onClick={() => handleDelete(r.id)}
+              className="px-3 py-1 rounded"
               style={{
-                background: "linear-gradient(90deg, #80cbc4, #66a7a3)",
-                width: "auto",
+                backgroundColor: "#80cbc4",
+                color: "#003f66",
+                transition: "background-color 0.3s",
               }}
-              onMouseEnter={(e) =>
-                (e.currentTarget.style.background = "linear-gradient(90deg, #a6d6d1, #80cbc4)")
-              }
-              onMouseLeave={(e) =>
-                (e.currentTarget.style.background = "linear-gradient(90deg, #80cbc4, #66a7a3)")
-              }
-              onFocus={(e) =>
-                (e.currentTarget.style.background = "linear-gradient(90deg, #a6d6d1, #80cbc4)")
-              }
-              onBlur={(e) =>
-                (e.currentTarget.style.background = "linear-gradient(90deg, #80cbc4, #66a7a3)")
-              }
+              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#a6d6d1")}
+              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#80cbc4")}
+              onFocus={(e) => (e.currentTarget.style.backgroundColor = "#a6d6d1")}
+              onBlur={(e) => (e.currentTarget.style.backgroundColor = "#80cbc4")}
             >
-              Torna alla Home
+              Elimina
             </button>
           </div>
+        </li>
+      ))}
+    </ul>
 
-          {editingId && (
-            <button
-              type="button"
-              onClick={cancelEdit}
-              className="transition-colors mt-2 px-4 py-2 rounded font-bold text-[#003f66]"
-              style={{
-                background: "linear-gradient(90deg, #80cbc4, #66a7a3)",
-                width: "100%",
-              }}
-              onMouseEnter={(e) =>
-                (e.currentTarget.style.background = "linear-gradient(90deg, #a6d6d1, #80cbc4)")
-              }
-              onMouseLeave={(e) =>
-                (e.currentTarget.style.background = "linear-gradient(90deg, #80cbc4, #66a7a3)")
-              }
-              onFocus={(e) =>
-                (e.currentTarget.style.background = "linear-gradient(90deg, #a6d6d1, #80cbc4)")
-              }
-              onBlur={(e) =>
-                (e.currentTarget.style.background = "linear-gradient(90deg, #80cbc4, #66a7a3)")
-              }
-            >
-              Annulla
-            </button>
-          )}
-        </form>
+    {/* form */}
+    <form
+      onSubmit={handleCreateOrUpdate}
+      className="bg-[#003f66] p-6 rounded shadow space-y-4 border border-white"
+      style={{ backgroundColor: "rgba(0, 63, 102, 0.85)" }}
+    >
+      <h2 className="text-xl font-semibold">
+        {editingId ? "Modifica recensione" : "Aggiungi nuova recensione"}
+      </h2>
+
+      <select
+        value={newReview.cittaId ?? ""}
+        onChange={(e) =>
+          setNewReview((prev) => ({ ...prev, cittaId: Number(e.target.value) }))
+        }
+        required
+        className="w-full p-2 rounded text-[#e0f2f1] border border-white"
+        style={{ backgroundColor: "#003f66", transition: "background-color 0.3s" }}
+        onMouseEnter={addHoverFocusStyles}
+        onMouseLeave={addHoverFocusStyles}
+        onFocus={addHoverFocusStyles}
+        onBlur={addHoverFocusStyles}
+      >
+        <option value="" disabled>
+          Seleziona città
+        </option>
+        {cities.map((c) => (
+          <option key={c.id} value={c.id}>
+            {c.nome}
+          </option>
+        ))}
+      </select>
+
+      <textarea
+        value={newReview.testo}
+        onChange={(e) => setNewReview((prev) => ({ ...prev, testo: e.target.value }))}
+        required
+        placeholder="Scrivi la tua recensione"
+        className="w-full p-2 rounded text-[#e0f2f1] border border-white h-24"
+        style={{ backgroundColor: "#003f66" }}
+      />
+
+      <label className="block text-white">
+        Voto:{" "}
+        <StarRating
+          rating={newReview.voto}
+          onChange={(val) => setNewReview((prev) => ({ ...prev, voto: val }))}
+        />
+      </label>
+
+      <div className="flex flex-col sm:flex-row justify-between gap-4">
+        <button
+          type="submit"
+          className="transition-colors px-4 py-2 rounded font-bold text-[#003f66]"
+          style={{
+            background: "linear-gradient(90deg, #80cbc4, #66a7a3)",
+            width: "100%",
+            maxWidth: "300px",
+          }}
+          onMouseEnter={(e) =>
+            (e.currentTarget.style.background = "linear-gradient(90deg, #a6d6d1, #80cbc4)")
+          }
+          onMouseLeave={(e) =>
+            (e.currentTarget.style.background = "linear-gradient(90deg, #80cbc4, #66a7a3)")
+          }
+          onFocus={(e) =>
+            (e.currentTarget.style.background = "linear-gradient(90deg, #a6d6d1, #80cbc4)")
+          }
+          onBlur={(e) =>
+            (e.currentTarget.style.background = "linear-gradient(90deg, #80cbc4, #66a7a3)")
+          }
+        >
+          {editingId ? "Aggiorna recensione" : "Invia recensione"}
+        </button>
+
+        <button
+          type="button"
+          onClick={() => navigate("/home")}
+          className="transition-colors px-4 py-2 rounded font-bold text-[#003f66]"
+          style={{
+            background: "linear-gradient(90deg, #80cbc4, #66a7a3)",
+            width: "100%",
+            maxWidth: "300px",
+          }}
+          onMouseEnter={(e) =>
+            (e.currentTarget.style.background = "linear-gradient(90deg, #a6d6d1, #80cbc4)")
+          }
+          onMouseLeave={(e) =>
+            (e.currentTarget.style.background = "linear-gradient(90deg, #80cbc4, #66a7a3)")
+          }
+          onFocus={(e) =>
+            (e.currentTarget.style.background = "linear-gradient(90deg, #a6d6d1, #80cbc4)")
+          }
+          onBlur={(e) =>
+            (e.currentTarget.style.background = "linear-gradient(90deg, #80cbc4, #66a7a3)")
+          }
+        >
+          Torna alla Home
+        </button>
       </div>
-    </div>
-  );
+
+      {editingId && (
+        <button
+          type="button"
+          onClick={cancelEdit}
+          className="transition-colors mt-4 px-4 py-2 rounded font-bold text-[#003f66]"
+          style={{
+            background: "linear-gradient(90deg, #80cbc4, #66a7a3)",
+            width: "100%",
+          }}
+          onMouseEnter={(e) =>
+            (e.currentTarget.style.background = "linear-gradient(90deg, #a6d6d1, #80cbc4)")
+          }
+          onMouseLeave={(e) =>
+            (e.currentTarget.style.background = "linear-gradient(90deg, #80cbc4, #66a7a3)")
+          }
+          onFocus={(e) =>
+            (e.currentTarget.style.background = "linear-gradient(90deg, #a6d6d1, #80cbc4)")
+          }
+          onBlur={(e) =>
+            (e.currentTarget.style.background = "linear-gradient(90deg, #80cbc4, #66a7a3)")
+          }
+        >
+          Annulla
+        </button>
+      )}
+    </form>
+  </div>
+</div>
+  )
 }

@@ -90,7 +90,7 @@ function AutocompleteInput({
   }
 
   return (
-    <div style={{ position: "relative", ...style, marginBottom: 10, marginTop: 10}}>
+    <div style={{ position: "relative", ...style, marginBottom: 10}}>
       {label && (
         <label className="text-[#e0f2f1] mb-1 block mt-5" htmlFor={label}>
           {label}
@@ -282,7 +282,7 @@ export function RegisterTripForm() {
 };
   return (
     <div
-      className="min-h-screen flex flex-col items-center justify-center p-6 mt-10"
+      className="min-h-screen flex flex-col items-center justify-center p-6"
       style={{ background: "linear-gradient(90deg, #003f66, #66a7a3)" }}
     >
       <div
