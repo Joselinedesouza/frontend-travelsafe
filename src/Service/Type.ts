@@ -1,1 +1,1 @@
-export type Section = "users" | "reviews" | "zones" | "notes" | "notifiche";
+export type Section = "dashboard"|"users" | "reviews" | "zones" | "notes" | "notifiche";

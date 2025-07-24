@@ -144,12 +144,11 @@ export async function deleteUser(id: number, token: string): Promise<void> {
 
 // --- Elimina profilo utente corrente con motivo ---
 
-export async function deleteCurrentUser(motivo: string | null | undefined, token: string): Promise<void> {
-  const body = motivo && motivo.trim().length > 0 ? { motivo: motivo.trim() } : {};
+export async function deleteCurrentUser(token: string): Promise<void> {
   const res = await fetch(`${BASE_URL}/users/me`, {
     method: "DELETE",
     headers: getHeaders(token),
-    body: JSON.stringify(body),
+    // niente body
   });
   await handleResponse<void>(res);
 }

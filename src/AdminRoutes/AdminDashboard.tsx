@@ -1,42 +1,47 @@
 import { useState } from "react";
 
+import type { Section } from "../Service/Type";
+import { AdminNavbar } from "../components/AdminNav";
+import AdminProfileHeader from "./AdminHeaders";
+import AdminStats from "./AdminStats";
+import AdminUsers from "./AdimUsers";
 import AdminReviews from "./AdminReviews";
 import AdminZoneRischio from "./AdminZoneRischio";
 import AdminNotes from "./AdminNotes";
-import { AdminNavbar } from "../components/AdminNav";
-import AdminUsers from "./AdimUsers"; // correggi qui il nome se serve
 import { AdminNotifiche } from "./AdminNotifiche";
 
-import type { Section } from "../Service/Type";
-
-export default function AdminDashboard() {
-  const [section, setSection] = useState<Section>("users");
-  const [menuOpen, setMenuOpen] = useState(false); // aggiunto stato menu
+export default function AdminPage() {
+  const [section, setSection] = useState<Section>("dashboard");
 
   const handleLogout = () => {
-    localStorage.clear();
-    window.location.href = "/login";
+    localStorage.removeItem("token");
+    window.location.href = "/";
   };
 
   return (
-    <div className="md:flex min-h-screen">
-      <AdminNavbar
-        section={section}
-        setSection={setSection}
-        onLogout={handleLogout}
-        onMenuToggle={setMenuOpen} // passo funzione per toggle menu
-      />
-      <main
-        className={`flex-1 p-8 bg-white rounded-tl-3xl rounded-bl-3xl shadow-lg overflow-auto transition-all duration-300
-          ${menuOpen ? "ml-64" : "ml-0"} md:ml-48`} // margin-left dinamico
-        style={{ minHeight: "100vh" }}
-      >
-        {section === "users" && <AdminUsers />}
-        {section === "reviews" && <AdminReviews />}
-        {section === "zones" && <AdminZoneRischio />}
-        {section === "notes" && <AdminNotes />}
-        {section === "notifiche" && <AdminNotifiche />}
-      </main>
+    <div className="flex bg-gray-100 min-h-screen font-sans">
+      {/* Sidebar */}
+      <AdminNavbar section={section} setSection={setSection} onLogout={handleLogout} />
+
+      {/* Main Content */}
+      <div className="flex-1 p-6 sm:ml-48 bg-gray-100 overflow-y-auto min-h-screen">
+        <div className="max-w-7xl mx-auto space-y-6">
+          {/* Dashboard */}
+          {section === "dashboard" && (
+            <>
+              <AdminProfileHeader />
+              <AdminStats />
+            </>
+          )}
+
+          {/* Altre sezioni */}
+          {section === "users" && <AdminUsers />}
+          {section === "reviews" && <AdminReviews />}
+          {section === "zones" && <AdminZoneRischio />}
+          {section === "notes" && <AdminNotes />}
+          {section === "notifiche" && <AdminNotifiche />}
+        </div>
+      </div>
     </div>
   );
 }

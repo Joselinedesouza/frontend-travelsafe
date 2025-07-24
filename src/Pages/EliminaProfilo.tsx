@@ -9,51 +9,50 @@ export function EliminaProfilo() {
   const navigate = useNavigate();
 
   async function handleDelete() {
-  if (!motivo.trim()) {
-    toast.error("Inserisci un motivo per l'eliminazione");
-    return;
-  }
-
-  if (!window.confirm("Sei sicuro di voler eliminare definitivamente il tuo profilo?")) {
-    return;
-  }
-
-  setLoading(true);
-  const token = localStorage.getItem("token");
-
-  try {
-    const res = await fetch("http://localhost:8080/api/users/me", {
-      method: "DELETE",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ motivo }),
-    });
-
-    if (!res.ok) {
-      const errorText = await res.text();
-      throw new Error(errorText || "Errore durante la cancellazione");
+    if (!motivo.trim()) {
+      toast.error("Inserisci un motivo per l'eliminazione");
+      return;
     }
 
-    toast.success("Profilo eliminato con successo.");
-
-    // Aspetta 1.5 secondi prima di fare redirect
-    setTimeout(() => {
-      localStorage.clear();
-      navigate("/login");
-    }, 1500);
-
-  } catch (error: unknown) {
-    if (error instanceof Error) {
-      toast.error("Errore: " + error.message);
-    } else {
-      toast.error("Errore sconosciuto");
+    if (!window.confirm("Sei sicuro di voler eliminare definitivamente il tuo profilo?")) {
+      return;
     }
-  } finally {
-    setLoading(false);
+
+    setLoading(true);
+    const token = localStorage.getItem("token");
+
+   try {
+  const res = await fetch("http://localhost:8080/api/users/me", {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ motivo }),
+  });
+
+  if (!res.ok) {
+    const errorText = await res.text();
+    throw new Error(errorText || "Errore durante la cancellazione");
   }
-}
+
+  toast.success("Profilo eliminato con successo.");
+
+  // Rimuove token e reindirizza alla landing page dopo breve attesa
+  setTimeout(() => {
+    localStorage.clear(); // logout completo
+    navigate("/"); // <-- qui reindirizzi alla landing page
+  }, 1500);
+
+} catch (error: unknown) {
+  if (error instanceof Error) {
+    toast.error("Errore: " + error.message);
+  } else {
+    toast.error("Errore sconosciuto");
+  }
+} finally {
+  setLoading(false);
+} }
 
   return (
     <div className="min-h-screen flex flex-col justify-center items-center bg-gradient-to-r from-petrolio to-azzurrochiaro p-6">
