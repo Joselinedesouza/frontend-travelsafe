@@ -55,6 +55,14 @@ function App() {
     setRole(null);
   };
 
+  // Funzione da passare a Login per aggiornare token e role dopo login
+  const handleLoginSuccess = (newToken: string, newRole: string) => {
+    localStorage.setItem("token", newToken);
+    localStorage.setItem("role", newRole);
+    setToken(newToken);
+    setRole(newRole);
+  };
+
   // Mostra TopBarHome solo se c'è token e ruolo diverso da ADMIN
   const showTopBar = token !== null && role !== "ADMIN";
 
@@ -114,7 +122,10 @@ function App() {
         <Route path="/my-trips" element={<MyTrips />} />
 
         {/* Autenticazione */}
-        <Route path="/login" element={<Login />} />
+        <Route
+          path="/login"
+          element={<Login onLoginSuccess={handleLoginSuccess} />}
+        />
         <Route path="/register" element={<Register />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />

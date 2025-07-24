@@ -1,23 +1,17 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useAuth } from "../Pages/AuthContext";
 
-export const Login = () => {
+interface LoginProps {
+  onLoginSuccess: (token: string, role: string) => void;
+}
+
+export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [error, setError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const navigate = useNavigate();
-  const { role, setToken, setUserEmail, setRole } = useAuth();
 
-  // Redirect immediato se ruolo già presente (utente loggato)
-  useEffect(() => {
-    if (role === "ADMIN") {
-      navigate("/admin/dashboard");
-    } else if (role) {
-      navigate("/home");
-    }
-  }, [role, navigate]);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const timer = setTimeout(() => setShowForm(true), 2000);
@@ -25,7 +19,8 @@ export const Login = () => {
   }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -34,7 +29,7 @@ export const Login = () => {
     setIsLoading(true);
 
     try {
-      const response = await fetch("http://localhost:8080/api/auth/login", {
+      const response = await fetch("/api/auth/login", {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
@@ -42,26 +37,33 @@ export const Login = () => {
       });
 
       const data = await response.json();
+      console.log("Login Response:", data);
 
       if (!response.ok) {
         throw new Error(data.message || "Errore durante il login");
       }
 
-      // Salvo token e dati
-      setToken(data.token);
-      setUserEmail(data.email);
-      setRole(data.role);
+      const cleanedRole = data.role?.replace("ROLE_", "") || "";
+
+      // ✅ Aggiorna lo stato globale App tramite callback
+      onLoginSuccess(data.token, cleanedRole);
+
+      // Salva anche nel localStorage per persistenza
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("email", data.email);
+      localStorage.setItem("role", cleanedRole);
 
       setIsLoading(false);
 
-      // Redirect basato sul ruolo
-      if (data.role === "ADMIN") {
+      // ✅ Redirect basato sul ruolo
+      if (cleanedRole === "ADMIN") {
         navigate("/admin/dashboard");
       } else {
         navigate("/home");
       }
     } catch (err: unknown) {
       setIsLoading(false);
+      console.error("Errore login:", err);
       if (err instanceof Error) setError(err.message);
       else setError("Errore sconosciuto");
     }
@@ -98,7 +100,7 @@ export const Login = () => {
             value={formData.email}
             onChange={handleChange}
             required
-            className="mb-4 p-3 rounded-md border border-transparent w-full bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#004d40] font-semibold"
+            className="mb-4 p-3 rounded-md w-full bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#004d40] font-semibold"
           />
 
           <input
@@ -108,29 +110,21 @@ export const Login = () => {
             value={formData.password}
             onChange={handleChange}
             required
-            className="mb-4 p-3 rounded-md border border-transparent w-full bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#004d40] font-semibold"
+            className="mb-4 p-3 rounded-md w-full bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#004d40] font-semibold"
           />
 
           {error && (
-            <p className="text-red-400 mb-4 font-semibold text-center">{error}</p>
+            <p className="text-red-400 mb-4 font-semibold text-center">
+              {error}
+            </p>
           )}
 
           <button
             type="submit"
             className="w-full py-3 rounded-md font-bold text-white transition-colors duration-300 mb-4"
             style={{ backgroundColor: "#003f66" }}
-            onMouseEnter={(e) =>
-              (e.currentTarget.style.backgroundColor = "#66a7a3")
-            }
-            onMouseLeave={(e) =>
-              (e.currentTarget.style.backgroundColor = "#003f66")
-            }
-            onFocus={(e) =>
-              (e.currentTarget.style.backgroundColor = "#66a7a3")
-            }
-            onBlur={(e) =>
-              (e.currentTarget.style.backgroundColor = "#003f66")
-            }
+            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#66a7a3")}
+            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#003f66")}
           >
             Accedi
           </button>
@@ -140,18 +134,8 @@ export const Login = () => {
             onClick={handleGoogleLogin}
             className="w-full py-3 rounded-md font-bold text-white transition-colors duration-300"
             style={{ backgroundColor: "#DB4437" }}
-            onMouseEnter={(e) =>
-              (e.currentTarget.style.backgroundColor = "#E57368")
-            }
-            onMouseLeave={(e) =>
-              (e.currentTarget.style.backgroundColor = "#DB4437")
-            }
-            onFocus={(e) =>
-              (e.currentTarget.style.backgroundColor = "#E57368")
-            }
-            onBlur={(e) =>
-              (e.currentTarget.style.backgroundColor = "#DB4437")
-            }
+            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#E57368")}
+            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#DB4437")}
           >
             Accedi con Google
           </button>

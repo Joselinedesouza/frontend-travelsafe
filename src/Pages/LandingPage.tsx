@@ -3,9 +3,19 @@ import { TopBar } from "../components/TopBar";
 import { Footer } from "../components/Footer";
 import { useNavigate } from "react-router-dom";
 import bgImage from "../assets/imgsfondo.jpg";
+import { useEffect } from "react";
+import { useAuth } from "../Pages/AuthContext";
 
 export default function LandingPage() {
   const navigate = useNavigate();
+  const { token } = useAuth();
+
+  // Redirect automatico se utente loggato
+  useEffect(() => {
+    if (token) {
+      navigate("/home", { replace: true });
+    }
+  }, [token, navigate]);
 
   return (
     <div
