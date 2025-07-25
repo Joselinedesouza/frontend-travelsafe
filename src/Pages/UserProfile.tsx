@@ -83,12 +83,12 @@ export function UserProfile() {
       formPayload.append("nickname", formData.nickname || "");
       if (formData.telefono) formPayload.append("telefono", formData.telefono);
       if (formData.bio) formPayload.append("bio", formData.bio);
-      if (imageFile) formPayload.append("immagineProfilo", imageFile);
+      if (imageFile) formPayload.append("immagineProfilo", imageFile); // 👈 importante per Cloudinary
 
       const res = await fetch(`${import.meta.env.VITE_API_URL}/api/user/profile`, {
         method: "PUT",
         headers: {
-          Authorization: `Bearer ${token}`, // ❗️NON aggiungere Content-Type
+          Authorization: `Bearer ${token}`,
         },
         body: formPayload,
       });
@@ -201,10 +201,11 @@ export function UserProfile() {
           )}
         </div>
 
-        {/* Campi utente */}
         {["nome", "cognome", "email"].map((key) => (
           <div key={key} style={{ marginBottom: 16 }}>
-            <label style={{ fontWeight: 600 }}>{key.charAt(0).toUpperCase() + key.slice(1)}</label>
+            <label style={{ fontWeight: 600 }}>
+              {key.charAt(0).toUpperCase() + key.slice(1)}
+            </label>
             <input
               value={(user as any)[key]}
               disabled
