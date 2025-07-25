@@ -43,7 +43,7 @@ export default function AdminStats() {
 
   useEffect(() => {
     const token = localStorage.getItem("token");
-    fetch("http://localhost:8080/api/zone-rischi/stats", {
+    fetch(`${import.meta.env.VITE_API_URL}/api/zone-rischi/stats`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((res) => {

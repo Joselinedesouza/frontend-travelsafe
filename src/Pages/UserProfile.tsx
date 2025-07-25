@@ -29,7 +29,7 @@ export function UserProfile() {
       return;
     }
 
-    fetch("http://localhost:8080/api/user/profile", {
+    fetch(`${import.meta.env.VITE_API_URL}/api/user/profile`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((res) => {
@@ -83,7 +83,7 @@ export function UserProfile() {
       if (formData.bio) formPayload.append("bio", formData.bio);
       if (imageFile) formPayload.append("immagineProfilo", imageFile);
 
-      const res = await fetch("http://localhost:8080/api/user/profile", {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/user/profile`, {
         method: "PUT",
         headers: {
           Authorization: `Bearer ${token}`,

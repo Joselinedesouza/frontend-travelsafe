@@ -46,7 +46,7 @@ const Home = () => {
 
     const token = localStorage.getItem("token");
 
-    fetch("http://localhost:8080/api/user/profile", {
+    fetch(`${import.meta.env.VITE_API_URL}/api/user/profile`, {
       credentials: "include", // importante se backend usa cookie HttpOnly
       headers: token
         ? {

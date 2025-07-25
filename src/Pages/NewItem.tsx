@@ -26,7 +26,7 @@ export default function NewsByCity() {
     setError(null);
 
     try {
-      const res = await fetch(`http://localhost:8080/api/news?city=${encodeURIComponent(city)}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/news?city=${encodeURIComponent(city)}`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token") ?? ""}`,
           "Content-Type": "application/json",

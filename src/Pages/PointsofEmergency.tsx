@@ -289,7 +289,7 @@ export default function PointsofEmergency() {
       localStorage.setItem("savedLocations", JSON.stringify(nuoviRecord));
 
       // Salvataggio backend (modifica URL se serve)
-      const response = await fetch("http://localhost:8080/api/location/save", {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/location/save`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

@@ -7,7 +7,7 @@ export function useNotificheAdminWS() {
   const [notifiche, setNotifiche] = useState<Notifica[]>([]);
 
   useEffect(() => {
-    const socket = new SockJS("http://localhost:8080/ws");
+    const socket = new SockJS(`${import.meta.env.VITE_API_URL}/ws`);
     const stompClient = Stomp.over(socket);
 
     stompClient.connect({}, () => {

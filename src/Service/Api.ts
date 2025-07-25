@@ -29,7 +29,7 @@ export interface Notifica {
   timestamp: string;  // timestamp in formato ISO string
 }
 
-const BASE_URL = "http://localhost:8080/api";
+const BASE_URL = `${import.meta.env.VITE_API_URL}/api`;
 
 function getHeaders(token: string) {
   return {

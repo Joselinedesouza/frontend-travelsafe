@@ -234,7 +234,7 @@ export function RegisterTripForm() {
 
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch("http://localhost:8080/api/viaggi/mine", {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/viaggi/mine`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
