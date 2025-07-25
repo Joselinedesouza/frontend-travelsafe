@@ -89,6 +89,7 @@ export function UserProfile() {
         method: "PUT",
         headers: {
           Authorization: `Bearer ${token}`,
+          // ❌ non forzare Content-Type
         },
         body: formPayload,
       });
@@ -167,43 +168,33 @@ export function UserProfile() {
       }}>
         <h2 style={{ textAlign: "center", marginBottom: 24 }}>Il tuo profilo</h2>
 
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: 24, position: "relative" }}>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: 24 }}>
           <img
             src={previewImg || user.immagineProfilo || "/default-profile.png"}
             alt="Immagine Profilo"
             style={{ width: 128, height: 128, borderRadius: "50%", objectFit: "cover", border: "2px solid white" }}
           />
+
           {isEditing && (
-            <>
+            <div style={{ marginTop: 12, width: "100%" }}>
+              <label style={{ fontWeight: 600, display: "block", marginBottom: 6 }}>
+                Cambia immagine profilo
+              </label>
               <input
                 type="file"
                 accept="image/*"
-                id="upload-profile-image"
+                capture="environment"
                 onChange={handleImageChange}
-                style={{ display: "none" }}
-              />
-              <label
-                htmlFor="upload-profile-image"
                 style={{
-                  position: "absolute",
-                  bottom: -10,
-                  left: "50%",
-                  transform: "translateX(-50%)",
-                  cursor: "pointer",
-                  backgroundColor: "rgba(0,0,0,0.6)",
-                  borderRadius: "50%",
-                  width: 32,
-                  height: 32,
-                  border: "2px solid white",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
+                  padding: 8,
+                  width: "100%",
+                  borderRadius: 6,
+                  border: "1px solid #ccc",
+                  backgroundColor: "#fff",
+                  color: "#000",
                 }}
-                title="Cambia immagine profilo"
-              >
-                <FaPencilAlt size={16} />
-              </label>
-            </>
+              />
+            </div>
           )}
         </div>
 
