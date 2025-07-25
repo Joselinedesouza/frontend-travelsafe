@@ -88,15 +88,18 @@ export function UserProfile() {
       const res = await fetch(`${import.meta.env.VITE_API_URL}/api/user/profile`, {
         method: "PUT",
         headers: {
-          Authorization: `Bearer ${token}`,
-          // ❌ non forzare Content-Type
+          Authorization: `Bearer ${token}`, // ❗️NON aggiungere Content-Type
         },
         body: formPayload,
       });
 
-      if (!res.ok) throw new Error("Errore nel salvataggio");
-      const updated = await res.json();
+      if (!res.ok) {
+        const errText = await res.text();
+        console.error("Errore salvataggio:", errText);
+        throw new Error("Errore nel salvataggio");
+      }
 
+      const updated = await res.json();
       setUser(updated);
       setFormData(updated);
       setPreviewImg(null);
