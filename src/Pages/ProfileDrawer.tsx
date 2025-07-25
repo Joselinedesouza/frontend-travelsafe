@@ -34,23 +34,8 @@ export const ProfileDrawer = ({ onClose, onLogout }: ProfileDrawerProps) => {
         </li>
 
         <li className="flex items-center gap-3 hover:text-blue-300">
-          <FaBell />
-          <Link to="/notifiche" onClick={onClose}>Notifiche e offerte</Link>
-        </li>
-
-        <li className="flex items-center gap-3 hover:text-blue-300">
-          <FaCreditCard />
-          <Link to="/pagamenti" onClick={onClose}>Pagamenti</Link>
-        </li>
-
-        <li className="flex items-center gap-3 hover:text-blue-300">
           <FaMapMarkedAlt />
           <Link to="/my-trips" onClick={onClose}>I miei viaggi</Link>
-        </li>
-
-        <li className="flex items-center gap-3 hover:text-blue-300">
-          <FaShieldAlt />
-          <Link to="/sicurezza" onClick={onClose}>Sicurezza</Link>
         </li>
 
         <li className="flex items-center gap-3 hover:text-blue-300">
