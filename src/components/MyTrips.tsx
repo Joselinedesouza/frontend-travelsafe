@@ -28,7 +28,7 @@ export function MyTrips() {
       if (!token) {
         throw new Error("Token non trovato, esegui il login.");
       }
-      const res = await fetch("http://localhost:8080/api/viaggi/mine", {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/viaggi/mine`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -66,7 +66,7 @@ export function MyTrips() {
     }
 
     try {
-      const res = await fetch(`http://localhost:8080/api/viaggi/${id}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/viaggi/${id}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,

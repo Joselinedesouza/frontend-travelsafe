@@ -188,7 +188,7 @@ export function RegisterTripForm() {
     try {
       const token = localStorage.getItem("token");
       const res = await fetch(
-        `/api/zone-rischio/search?lat=${lat}&lng=${lng}&radiusKm=10`,
+        `${import.meta.env.VITE_API_URL}/api/zone-rischio/search?lat=${lat}&lng=${lng}&radiusKm=10`,
         { headers: { Authorization: `Bearer ${token ?? ""}` } }
       );
       if (!res.ok) throw new Error("Errore caricamento zone a rischio");

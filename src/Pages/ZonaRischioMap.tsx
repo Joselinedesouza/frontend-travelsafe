@@ -56,7 +56,7 @@ export default function ZonaRischioMapAutocomplete() {
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch("/api/zone-rischio/search?lat=45.464211&lng=9.191383&radiusKm=15");
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/api/zone-rischio/search?lat=45.464211&lng=9.191383&radiusKm=15`);
         if (!res.ok) throw new Error(`Errore ${res.status}: ${res.statusText}`);
 
         const contentType = res.headers.get("content-type");
@@ -127,7 +127,7 @@ export default function ZonaRischioMapAutocomplete() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/zone-rischio/search?lat=${latNum}&lng=${lonNum}&radiusKm=10`);
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/zone-rischio/search?lat=${latNum}&lng=${lonNum}&radiusKm=10`);
       if (!res.ok) throw new Error(`Errore ${res.status}: ${res.statusText}`);
 
       const contentType = res.headers.get("content-type");
