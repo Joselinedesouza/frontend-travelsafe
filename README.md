@@ -100,6 +100,21 @@ Inserimento, modifica e cancellazione recensioni con rating a stelle
 Ricezione di notifiche push tramite WebSocket (SockJS + STOMP) senza ricaricare la pagina
 
 ############################################################################
+Link dell'app
+
+https://frontend-travelsafe.vercel.app/
+
+per accedere tramite user registrarsi o utilizzare questo per testare
+
+username: Rossimario123@gmail.com
+password: Mario123@
+
+invece per entrare come amministratore metti le seguente credenziali
+
+username: Joselinedesouza022@gmail.com
+password: adminPassword123
+
+---
 
 🚀 Come utilizzare l’app TravelSafe
 
@@ -158,6 +173,35 @@ Dicioso "MOTIVO" perchè è importante? è importante perchè arriva direttament
 ![alt text](image-18.png)
 
 ---
+
+Funzonalità admin
+
+Dashboard
+![alt text](image-19.png)
+
+Gestione Utenti
+
+L'admin può disattivare, attivare o eliminare un utente
+![alt text](image-20.png)
+in ognuna di essa l'admin deve mandare la mail con la motivazione..
+
+Recenzione
+L'utente lascia una recensione e l'admin può rispondere
+![alt text](image-21.png)
+
+Zone-Rischio
+l'admin in base alle recensioni notizie ecc, può aggiungere nuove zone rischio, modificare il livello o addiruttura eliminarle tutto si aggiornerà sulla mappa "CONSULTA ZONE"
+![alt text](image-22.png)
+
+Note Admin
+Un admin può lasciare delle note con le modifiche effettuate in modo che un suo collega possa vedere effettivamente
+i progressi o i cambiamenti.
+![alt text](image-23.png)
+
+Ed in fine
+Nella sezione NOtifiche l'admin vedrà gli utenti che hanni eliminato il proprio profilo, con le loro motivazione...
+e da li potrà prendere spunto per le migliorie da effettuare all'app..
+![alt text](image-24.png)
 
 📞 Contatti
 Creato da Joseline De Souza
