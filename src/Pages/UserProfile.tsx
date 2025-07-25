@@ -21,6 +21,7 @@ export function UserProfile() {
   const [previewImg, setPreviewImg] = useState<string | null>(null);
   const [formData, setFormData] = useState<Partial<UserProfile>>({});
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -39,8 +40,6 @@ export function UserProfile() {
       .then((data: UserProfile) => {
         setUser(data);
         setFormData(data);
-
-        // Salvo email utente per sincronizzare la TopBarHome
         if (data.email) {
           localStorage.setItem("userEmail", data.email);
         }
@@ -71,11 +70,14 @@ export function UserProfile() {
       alert("Il nickname è obbligatorio");
       return;
     }
+
     const token = localStorage.getItem("token");
     if (!token) {
       setError("Non sei autenticato");
       return;
     }
+
+    setIsSaving(true);
     try {
       const formPayload = new FormData();
       formPayload.append("nickname", formData.nickname || "");
@@ -90,13 +92,15 @@ export function UserProfile() {
         },
         body: formPayload,
       });
+
       if (!res.ok) throw new Error("Errore nel salvataggio");
       const updated = await res.json();
 
       setUser(updated);
       setFormData(updated);
+      setPreviewImg(null);
+      setImageFile(null);
 
-      // Salvo in localStorage dati specifici per utente email
       if (updated.email) {
         localStorage.setItem(`profileImage_${updated.email}`, updated.immagineProfilo || "");
         localStorage.setItem(`nome_${updated.email}`, updated.nome);
@@ -104,52 +108,21 @@ export function UserProfile() {
         localStorage.setItem("userEmail", updated.email);
       }
 
-      // Notifico TopBarHome di aggiornamento profilo
       window.dispatchEvent(new Event("profileUpdated"));
-
       setIsEditing(false);
-      setPreviewImg(null);
-      setImageFile(null);
-      alert("Profilo aggiornato con successo!");
     } catch (err) {
       setError((err as Error).message);
+    } finally {
+      setIsSaving(false);
     }
   }
-
-  if (error)
-    return (
-      <p
-        style={{
-          color: "red",
-          textAlign: "center",
-          marginTop: 20,
-          fontFamily: "'Arial', sans-serif",
-        }}
-      >
-        {error}
-      </p>
-    );
-  if (!user)
-    return (
-      <p
-        style={{
-          textAlign: "center",
-          marginTop: 20,
-          fontFamily: "'Arial', sans-serif",
-        }}
-      >
-        Caricamento...
-      </p>
-    );
 
   const inputStyle = {
     width: "100%",
     padding: 8,
     borderRadius: 6,
     border: "none",
-    background: isEditing
-      ? "linear-gradient(90deg, #003f66, #66a7a3)"
-      : "#f0f0f0",
+    background: isEditing ? "linear-gradient(90deg, #003f66, #66a7a3)" : "#f0f0f0",
     color: isEditing ? "white" : "#666",
     fontWeight: isEditing ? "600" : "normal",
   };
@@ -164,64 +137,41 @@ export function UserProfile() {
     cursor: "pointer",
   };
 
-  return (
-    <div
-      style={{
-        minHeight: "100vh",
-        width: "100vw",
-        background: "linear-gradient(90deg, #003f66, #66a7a3)",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        padding: 20,
-        boxSizing: "border-box",
-        fontFamily: "'Arial', sans-serif",
-      }}
-    >
-      <div
-        style={{
-          maxWidth: 600,
-          width: "100%",
-          padding: 20,
-          borderRadius: 8,
-          backgroundColor: "rgba(255, 255, 255, 0.1)",
-          boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
-          color: "white",
-          backdropFilter: "blur(10px)",
-          WebkitBackdropFilter: "blur(10px)",
-        }}
-      >
-        <h2
-          style={{
-            fontSize: 24,
-            fontWeight: "bold",
-            marginBottom: 24,
-            textAlign: "center",
-          }}
-        >
-          Il tuo profilo
-        </h2>
+  if (error)
+    return <p style={{ color: "red", textAlign: "center", marginTop: 20 }}>{error}</p>;
 
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            marginBottom: 24,
-            position: "relative",
-          }}
-        >
+  if (!user)
+    return <p style={{ textAlign: "center", marginTop: 20 }}>Caricamento...</p>;
+
+  return (
+    <div style={{
+      minHeight: "100vh",
+      width: "100vw",
+      background: "linear-gradient(90deg, #003f66, #66a7a3)",
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center",
+      padding: 20,
+      boxSizing: "border-box",
+      fontFamily: "'Arial', sans-serif",
+    }}>
+      <div style={{
+        maxWidth: 600,
+        width: "100%",
+        padding: 20,
+        borderRadius: 8,
+        backgroundColor: "rgba(255, 255, 255, 0.1)",
+        boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
+        color: "white",
+        backdropFilter: "blur(10px)",
+      }}>
+        <h2 style={{ textAlign: "center", marginBottom: 24 }}>Il tuo profilo</h2>
+
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: 24, position: "relative" }}>
           <img
             src={previewImg || user.immagineProfilo || "/default-profile.png"}
             alt="Immagine Profilo"
-            style={{
-              width: 128,
-              height: 128,
-              borderRadius: "50%",
-              objectFit: "cover",
-              border: "2px solid white",
-              display: "block",
-            }}
+            style={{ width: 128, height: 128, borderRadius: "50%", objectFit: "cover", border: "2px solid white" }}
           />
           {isEditing && (
             <>
@@ -230,31 +180,24 @@ export function UserProfile() {
                 accept="image/*"
                 id="upload-profile-image"
                 onChange={handleImageChange}
-                style={{
-                  display: "none",
-                  position: "absolute",
-                  bottom: -10,
-                  left: "50%",
-                  transform: "translateX(-50%)",
-                }}
+                style={{ display: "none" }}
               />
               <label
                 htmlFor="upload-profile-image"
                 style={{
-                  cursor: "pointer",
-                  color: "white",
-                  width: 32,
-                  height: 32,
-                  backgroundColor: "rgba(0,0,0,0.6)",
-                  borderRadius: "50%",
-                  border: "2px solid white",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
                   position: "absolute",
                   bottom: -10,
                   left: "50%",
                   transform: "translateX(-50%)",
+                  cursor: "pointer",
+                  backgroundColor: "rgba(0,0,0,0.6)",
+                  borderRadius: "50%",
+                  width: 32,
+                  height: 32,
+                  border: "2px solid white",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
                 }}
                 title="Cambia immagine profilo"
               >
@@ -264,61 +207,26 @@ export function UserProfile() {
           )}
         </div>
 
-        <div style={{ marginBottom: 16 }}>
-          <label style={{ fontWeight: "600", display: "block", marginBottom: 6 }}>
-            Nome
-          </label>
-          <input
-            value={user.nome}
-            disabled
-            style={{
-              ...inputStyle,
-              background: "#f0f0f0",
-              color: "#666",
-              fontWeight: "normal",
-              border: "1px solid #ccc",
-            }}
-          />
-        </div>
+        {/* Campi utente */}
+        {["nome", "cognome", "email"].map((key) => (
+          <div key={key} style={{ marginBottom: 16 }}>
+            <label style={{ fontWeight: 600 }}>{key.charAt(0).toUpperCase() + key.slice(1)}</label>
+            <input
+              value={(user as any)[key]}
+              disabled
+              style={{
+                ...inputStyle,
+                background: "#f0f0f0",
+                color: "#666",
+                fontWeight: "normal",
+                border: "1px solid #ccc",
+              }}
+            />
+          </div>
+        ))}
 
         <div style={{ marginBottom: 16 }}>
-          <label style={{ fontWeight: "600", display: "block", marginBottom: 6 }}>
-            Cognome
-          </label>
-          <input
-            value={user.cognome}
-            disabled
-            style={{
-              ...inputStyle,
-              background: "#f0f0f0",
-              color: "#666",
-              fontWeight: "normal",
-              border: "1px solid #ccc",
-            }}
-          />
-        </div>
-
-        <div style={{ marginBottom: 16 }}>
-          <label style={{ fontWeight: "600", display: "block", marginBottom: 6 }}>
-            Email
-          </label>
-          <input
-            value={user.email}
-            disabled
-            style={{
-              ...inputStyle,
-              background: "#f0f0f0",
-              color: "#666",
-              fontWeight: "normal",
-              border: "1px solid #ccc",
-            }}
-          />
-        </div>
-
-        <div style={{ marginBottom: 16 }}>
-          <label style={{ fontWeight: "600", display: "block", marginBottom: 6 }}>
-            Nickname
-          </label>
+          <label style={{ fontWeight: 600 }}>Nickname</label>
           <input
             name="nickname"
             value={formData.nickname || ""}
@@ -329,9 +237,7 @@ export function UserProfile() {
         </div>
 
         <div style={{ marginBottom: 16 }}>
-          <label style={{ fontWeight: "600", display: "block", marginBottom: 6 }}>
-            Telefono
-          </label>
+          <label style={{ fontWeight: 600 }}>Telefono</label>
           <input
             name="telefono"
             value={formData.telefono || ""}
@@ -342,20 +248,14 @@ export function UserProfile() {
         </div>
 
         <div style={{ marginBottom: 24 }}>
-          <label style={{ fontWeight: "600", display: "block", marginBottom: 6 }}>
-            Bio
-          </label>
+          <label style={{ fontWeight: 600 }}>Bio</label>
           <textarea
             name="bio"
             value={formData.bio || ""}
             onChange={handleChange}
             disabled={!isEditing}
             rows={3}
-            style={{
-              ...inputStyle,
-              resize: "none",
-              height: 80,
-            }}
+            style={{ ...inputStyle, resize: "none", height: 80 }}
           />
         </div>
 
@@ -365,40 +265,25 @@ export function UserProfile() {
               <button
                 onClick={() => {
                   setIsEditing(false);
-                  setFormData(user);
+                  setFormData(user!);
                   setPreviewImg(null);
                   setImageFile(null);
-                  setError(null);
                 }}
-                style={{
-                  ...buttonBaseStyle,
-                  background: "#f44336", // rosso annulla
-                }}
+                style={{ ...buttonBaseStyle, background: "#f44336" }}
+                disabled={isSaving}
               >
                 Annulla
               </button>
-              <button onClick={handleSave} style={buttonBaseStyle}>
-                Salva
+              <button onClick={handleSave} style={buttonBaseStyle} disabled={isSaving}>
+                {isSaving ? "Salvataggio..." : "Salva"}
               </button>
             </>
           ) : (
             <>
-              <button
-                onClick={() => setIsEditing(true)}
-                style={{
-                  ...buttonBaseStyle,
-                  background: "#22c55e", // verde modifica
-                }}
-              >
+              <button onClick={() => setIsEditing(true)} style={{ ...buttonBaseStyle, background: "#22c55e" }}>
                 Modifica profilo
               </button>
-              <button
-                onClick={() => navigate("/home")}
-                style={{
-                  ...buttonBaseStyle,
-                  background: "#6b7280", // grigio
-                }}
-              >
+              <button onClick={() => navigate("/home")} style={{ ...buttonBaseStyle, background: "#6b7280" }}>
                 Torna alla Home
               </button>
             </>
