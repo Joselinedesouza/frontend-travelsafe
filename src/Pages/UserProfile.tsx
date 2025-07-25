@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import type { ChangeEvent } from "react";
 import { useNavigate } from "react-router-dom";
-import { FaPencilAlt } from "react-icons/fa";
 
 type UserProfile = {
   nome: string;
@@ -83,7 +82,7 @@ export function UserProfile() {
       formPayload.append("nickname", formData.nickname || "");
       if (formData.telefono) formPayload.append("telefono", formData.telefono);
       if (formData.bio) formPayload.append("bio", formData.bio);
-      if (imageFile) formPayload.append("immagineProfilo", imageFile); // 👈 importante per Cloudinary
+      if (imageFile) formPayload.append("immagineProfilo", imageFile);
 
       const res = await fetch(`${import.meta.env.VITE_API_URL}/api/user/profile`, {
         method: "PUT",
@@ -186,7 +185,7 @@ export function UserProfile() {
               <input
                 type="file"
                 accept="image/*"
-                capture="environment"
+                capture // mobile: fa scegliere fotocamera o galleria
                 onChange={handleImageChange}
                 style={{
                   padding: 8,
