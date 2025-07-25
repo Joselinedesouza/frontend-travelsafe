@@ -95,7 +95,8 @@ export function UserProfile() {
       if (!res.ok) {
         const errText = await res.text();
         console.error("Errore salvataggio:", errText);
-        throw new Error("Errore nel salvataggio");
+        alert("Errore nel salvataggio del profilo, riprova.");
+        return;
       }
 
       const updated = await res.json();
@@ -114,11 +115,12 @@ export function UserProfile() {
       window.dispatchEvent(new Event("profileUpdated"));
       setIsEditing(false);
     } catch (err) {
-      setError((err as Error).message);
+      setError("Errore nel caricamento dell'immagine o salvataggio profilo.");
     } finally {
       setIsSaving(false);
     }
   }
+
 
   const inputStyle = {
     width: "100%",
