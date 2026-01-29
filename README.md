@@ -13,13 +13,13 @@ Che il tuo prossimo viaggio sia sempre una splendida avventura, con TravelSafe a
 Backend
 Java 21 con Spring Boot 3.5.3
 
-Spring Security con JWT e OAuth2 Client (login Google)
+Spring Security con JWT
 
 Spring Data JPA con PostgreSQL
 
 Validation per la validazione dati
 
-Spring WebSocket con STOMP e SockJS per notifiche in tempo reale
+Spring WebSocket con STOMP e SockJS per notifiche in tempo reale // da implementare ancora.
 
 SpringDoc OpenAPI per documentazione API interattiva
 
@@ -48,7 +48,7 @@ Tailwind CSS per styling moderno e responsive
 
 API REST per comunicazione con backend
 
-WebSocket per notifiche in tempo reale
+WebSocket per notifiche in tempo reale // da implementare
 
 💻 Funzionamento Frontend
 Ho realizzato il frontend come Single Page Application (SPA) con React.js e TypeScript, pensata per offrire un’esperienza utente fluida, intuitiva e reattiva.
@@ -63,7 +63,7 @@ Styling moderno e responsive con Tailwind CSS, mobile-first, con gestione dinami
 
 Funzionalità principali:
 
-Autenticazione: login e registrazione tramite form, con integrazione Google OAuth2 per accesso rapido. Stato di autenticazione gestito con Context API e token JWT salvato in localStorage.
+Autenticazione: login e registrazione tramite form. Stato di autenticazione gestito con Context API e token JWT salvato in localStorage.
 
 Gestione Viaggi: form con campi dinamici e autocomplete geolocalizzato tramite API Nominatim, mappa interattiva con Leaflet.
 
@@ -73,7 +73,7 @@ Recensioni: inserimento, modifica, cancellazione recensioni con rating a stelle;
 
 Profilo Utente: visualizzazione e modifica dati profilo, upload e anteprima immagini integrate con backend tramite Cloudinary.
 
-Notifiche in tempo reale: connessione WebSocket (SockJS + STOMP) per ricevere notifiche push senza ricaricare la pagina.
+Notifiche in tempo reale: connessione WebSocket (SockJS + STOMP) per ricevere notifiche push senza ricaricare la pagina. //da implementare.
 
 📞 Contatti
 Creato da Joseline De Souza

@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, ReactNode, useEffect } from "react";
+import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback } from "react";
+import { registerLogout } from "../Service/authManager";
 
 interface AuthContextType {
   token: string | null;
@@ -10,7 +11,6 @@ interface AuthContextType {
   logout: () => void;
 }
 
-// Export nominativo AuthContext
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -18,6 +18,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [userEmail, setUserEmailState] = useState<string | null>(localStorage.getItem("userEmail"));
   const [role, setRoleState] = useState<string | null>(localStorage.getItem("role"));
 
+  const setToken = (t: string | null) => setTokenState(t);
+  const setUserEmail = (e: string | null) => setUserEmailState(e);
+  const setRole = (r: string | null) => setRoleState(r);
+
+  // logout stabile (useCallback) + rimuove solo chiavi auth
+  const logout = useCallback(() => {
+    setTokenState(null);
+    setUserEmailState(null);
+    setRoleState(null);
+
+    localStorage.removeItem("token");
+    localStorage.removeItem("userEmail");
+    localStorage.removeItem("role");
+  }, []);
+
+  //sync localStorage quando cambia stato
   useEffect(() => {
     if (token) localStorage.setItem("token", token);
     else localStorage.removeItem("token");
@@ -29,16 +45,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     else localStorage.removeItem("role");
   }, [token, userEmail, role]);
 
-  const setToken = (token: string | null) => setTokenState(token);
-  const setUserEmail = (email: string | null) => setUserEmailState(email);
-  const setRole = (role: string | null) => setRoleState(role);
-
-  const logout = () => {
-    setTokenState(null);
-    setUserEmailState(null);
-    setRoleState(null);
-    localStorage.clear();
-  };
+  //  registra logout una sola volta (stabile)
+  useEffect(() => {
+    registerLogout(logout);
+  }, [logout]);
 
   return (
     <AuthContext.Provider value={{ token, userEmail, role, setToken, setUserEmail, setRole, logout }}>
@@ -47,11 +57,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 }
 
-// Hook custom per consumare AuthContext più facilmente
 export function useAuth() {
   const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error("useAuth deve essere usato dentro AuthProvider");
-  }
+  if (!context) throw new Error("useAuth deve essere usato dentro AuthProvider");
   return context;
 }

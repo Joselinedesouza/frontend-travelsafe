@@ -1,69 +1,74 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import React, { useMemo, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
 export const ResetPassword = () => {
   const navigate = useNavigate();
-  const location = useLocation();
+  const [params] = useSearchParams();
+
+  const token = useMemo(() => params.get("token"), [params]);
 
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
-  const [token, setToken] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
-  useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    const t = params.get("token");
-    setToken(t);
-  }, [location.search]);
+  const handleBgChange = (
+    e:
+      | React.SyntheticEvent<HTMLInputElement>
+      | React.MouseEvent<HTMLButtonElement>
+      | React.FocusEvent<HTMLButtonElement>,
+    hover: boolean
+  ) => {
+    const target = e.currentTarget as HTMLElement;
+    target.style.background = hover
+      ? "linear-gradient(90deg, #66a7a3, #003f66)"
+      : "linear-gradient(90deg, #003f66, #66a7a3)";
+  };
 
-  async function handleSubmit(e: React.FormEvent) {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setMessage(null);
+
+    if (!token) {
+      setError("Token mancante o non valido. Apri il link ricevuto via email.");
+      return;
+    }
 
     if (password !== confirmPassword) {
       setError("Le password non corrispondono");
       return;
     }
-    if (!token) {
-      setError("Token mancante o non valido");
-      return;
-    }
+
+    setIsLoading(true);
 
     try {
-      const response = await fetch("http://localhost:8080/api/auth/reset-password", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          token,
-          newPassword: password,
-        }),
-      });
+      const response = await fetch(
+        "http://localhost:8080/api/auth/reset-password",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ token, newPassword: password }),
+        }
+      );
+
+      // il backend può rispondere con String o JSON: leggo come testo sempre
+      const text = await response.text();
 
       if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.message || "Errore durante il reset password");
+        // se per caso arriva JSON come stringa, lo mostriamo comunque
+        throw new Error(text || `Errore durante il reset (${response.status})`);
       }
 
-      setMessage("Password aggiornata con successo!");
-      setTimeout(() => navigate("/login"), 3000);
+      setMessage(text || "Password aggiornata con successo!");
+      setTimeout(() => navigate("/login"), 2000);
     } catch (err: unknown) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError("Errore sconosciuto");
-      }
+      if (err instanceof Error) setError(err.message);
+      else setError("Errore sconosciuto");
+    } finally {
+      setIsLoading(false);
     }
-  }
-
-  const handleBgChange = (e: React.SyntheticEvent<HTMLElement>, hover: boolean) => {
-    const target = e.currentTarget;
-    target.style.background = hover
-      ? "linear-gradient(90deg, #66a7a3, #003f66)"
-      : "linear-gradient(90deg, #003f66, #66a7a3)";
   };
 
   return (
@@ -80,9 +85,17 @@ export const ResetPassword = () => {
       <form
         onSubmit={handleSubmit}
         className="max-w-md w-full p-6 border rounded shadow"
-        style={{ background: "linear-gradient(90deg, #003f66, #66a7a3)" }}
+        style={{ background: "rgba(0,0,0,0.25)", borderColor: "rgba(255,255,255,0.25)" }}
       >
-        <h1 className="text-2xl font-bold mb-6 text-center text-white">Reset Password</h1>
+        <h1 className="text-2xl font-bold mb-6 text-center text-white">
+          Reset Password
+        </h1>
+
+        {!token && (
+          <p className="text-red-300 mb-4 text-center font-semibold">
+            Token mancante. Apri la pagina dal link ricevuto via email.
+          </p>
+        )}
 
         <input
           type="password"
@@ -116,24 +129,32 @@ export const ResetPassword = () => {
           onBlur={(e) => handleBgChange(e, false)}
         />
 
-        {message && <p className="text-green-400 mb-4 text-center font-semibold">{message}</p>}
-        {error && <p className="text-red-400 mb-4 text-center font-semibold">{error}</p>}
+        {message && (
+          <p className="text-green-300 mb-4 text-center font-semibold">
+            {message}
+          </p>
+        )}
+        {error && (
+          <p className="text-red-300 mb-4 text-center font-semibold">{error}</p>
+        )}
 
         <button
           type="submit"
+          disabled={isLoading || !token}
           className="py-2 px-4 rounded w-full font-semibold text-white"
           style={{
             background: "linear-gradient(90deg, #003f66, #66a7a3)",
             transition: "background 0.3s",
             border: "none",
-            cursor: "pointer",
+            cursor: isLoading || !token ? "not-allowed" : "pointer",
+            opacity: isLoading || !token ? 0.7 : 1,
           }}
           onMouseEnter={(e) => handleBgChange(e, true)}
           onMouseLeave={(e) => handleBgChange(e, false)}
           onFocus={(e) => handleBgChange(e, true)}
           onBlur={(e) => handleBgChange(e, false)}
         >
-          Cambia password
+          {isLoading ? "Aggiornamento..." : "Cambia password"}
         </button>
       </form>
     </div>

@@ -12,19 +12,24 @@ export const ForgotPassword = () => {
     setError(null);
 
     try {
-      const response = await fetch("http://localhost:8080/api/auth/request-reset", {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      });
+      const response = await fetch(
+        "http://localhost:8080/api/auth/request-reset",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email }),
+        }
+      );
+
+      const text = await response.text();
 
       if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.message || "Errore durante la richiesta di reset");
+        throw new Error(
+          text || `Errore durante la richiesta di reset (${response.status})`
+        );
       }
 
-      setMessage("Email inviata con successo, controlla tua mail!");
+      setMessage(text || "Richiesta inviata. Controlla la mail!");
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError(err.message);
@@ -34,13 +39,15 @@ export const ForgotPassword = () => {
     }
   };
 
-  // Funzione helper per hover/focus stile bottoni
-  function addHoverFocusStyles(
+  // Hover / focus helper
+  const addHoverFocusStyles = (
     e: React.MouseEvent<HTMLButtonElement> | React.FocusEvent<HTMLButtonElement>
-  ) {
+  ) => {
     e.currentTarget.style.backgroundColor =
-      e.type === "mouseenter" || e.type === "focus" ? "#66a7a3" : "#003f66";
-  }
+      e.type === "mouseenter" || e.type === "focus"
+        ? "#66a7a3"
+        : "#003f66";
+  };
 
   return (
     <div
@@ -52,29 +59,39 @@ export const ForgotPassword = () => {
         className="p-8 rounded-lg shadow-lg max-w-md w-full text-[#e0f2f1] flex flex-col"
         style={{ backgroundColor: "rgba(0,0,0,0.3)" }}
       >
-        <h1 className="text-3xl font-bold mb-6 text-center">Recupera Password</h1>
+        <h1 className="text-3xl font-bold mb-6 text-center">
+          Recupera Password
+        </h1>
 
         <input
           type="email"
           placeholder="Inserisci la tua email"
           value={email}
-          onChange={e => setEmail(e.target.value)}
+          onChange={(e) => setEmail(e.target.value)}
           required
           className="mb-4 p-3 rounded-md border border-transparent w-full text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 font-semibold"
-          style={{ backgroundColor: "#003f66", color: "#e0f2f1", borderColor: "#66a7a3" }}
+          style={{
+            backgroundColor: "#003f66",
+            color: "#e0f2f1",
+            borderColor: "#66a7a3",
+          }}
         />
 
         {message && (
-          <p className="text-green-400 mb-4 font-semibold text-center">{message}</p>
+          <p className="text-green-400 mb-4 font-semibold text-center">
+            {message}
+          </p>
         )}
         {error && (
-          <p className="text-red-400 mb-4 font-semibold text-center">{error}</p>
+          <p className="text-red-400 mb-4 font-semibold text-center">
+            {error}
+          </p>
         )}
 
         <button
           type="submit"
           className="transition-colors w-full py-3 rounded-md font-bold text-[#e0f2f1] mb-4"
-          style={{ backgroundColor: "#003f66", transition: "background-color 0.3s" }}
+          style={{ backgroundColor: "#003f66" }}
           onMouseEnter={addHoverFocusStyles}
           onMouseLeave={addHoverFocusStyles}
           onFocus={addHoverFocusStyles}

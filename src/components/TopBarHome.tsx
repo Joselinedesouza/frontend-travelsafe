@@ -56,17 +56,10 @@ export const TopBarHome = ({ onLogout }: TopBarHomeProps) => {
   }, []);
 
   const handleLogout = () => {
-    if (onLogout) {
-      onLogout();
-    } else {
-      localStorage.removeItem("token");
-      localStorage.removeItem("role");
-      localStorage.removeItem("userEmail");
-      setIsMenuOpen(false);
-      navigate("/logout");
-    }
-  };
-
+  setIsMenuOpen(false);
+  onLogout?.();     // logout dal context
+  navigate("/", { replace: true }); // torna alla landing
+};
   if (!isHomePage) return null;
 
   return (

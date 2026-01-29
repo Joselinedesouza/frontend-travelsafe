@@ -2,11 +2,14 @@ import { FaGlobeEurope, FaPlane } from "react-icons/fa";
 import { MapContainer, TileLayer } from "react-leaflet";
 import { ActionCard } from "../components/ActionCard";
 import { BottomNav } from "../components/BottomNav";
-import { TopBarHome } from "../components/TopBarHome";
 import { useNavigate, useLocation } from "react-router-dom";
 import "leaflet/dist/leaflet.css";
 import bgHome from "../assets/sfondohome.jpg";
 import { useCallback, useEffect, useState } from "react";
+import TextType from "../components/TextType";
+import PlaneCursor from "../components/PlaneCursor";
+
+const API_URL = import.meta.env.VITE_API_URL as string;
 
 interface UserProfile {
   nome: string;
@@ -20,39 +23,61 @@ const Home = () => {
   const gradientBackground = "linear-gradient(90deg, #003f66, #006aab)";
   const gradientBackgroundHover = "linear-gradient(90deg, #00518c, #3399dd)";
 
-  const goToZoneRischio = useCallback(() => navigate("/zone-rischio"), [navigate]);
-  const goToRegisterTrip = useCallback(() => navigate("/register-trip"), [navigate]);
+  const goToZoneRischio = useCallback(
+    () => navigate("/zone-rischio"),
+    [navigate]
+  );
 
-  // Stato per dati utente autenticato
+  const goToRegisterTrip = useCallback(
+    () => navigate("/register-trip"),
+    [navigate]
+  );
+
   const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Leggi token da query string e salvalo localStorage, poi ripulisci url
+  /* ===============================
+     OAuth callback: token in URL
+     =============================== */
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const token = params.get("token");
+
     if (token) {
       localStorage.setItem("token", token);
-      // Rimuove i parametri dalla URL senza ricaricare la pagina
-      navigate("/home", { replace: true });
+
+      // pulizia dati vecchi
+      localStorage.removeItem("role");
+      localStorage.removeItem("userEmail");
+
+      // ripulisce URL
+      navigate({ pathname: "/home" }, { replace: true });
     }
   }, [location.search, navigate]);
 
-  // Al caricamento della pagina prova a recuperare dati utente protetti
+  /* ===============================
+     Fetch profilo utente
+     =============================== */
   useEffect(() => {
+    const token = localStorage.getItem("token");
+
+    // Se non loggata → landing
+    if (!token) {
+      setUser(null);
+      setLoading(false);
+      setError(null);
+      navigate("/", { replace: true });
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
-    const token = localStorage.getItem("token");
-
-    fetch("http://localhost:8080/api/user/profile", {
-      credentials: "include", // importante se backend usa cookie HttpOnly
-      headers: token
-        ? {
-            Authorization: `Bearer ${token}`,
-          }
-        : undefined,
+    fetch(`${API_URL}/api/user/profile`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
     })
       .then((res) => {
         if (!res.ok) throw new Error("Utente non autenticato");
@@ -62,15 +87,29 @@ const Home = () => {
         setUser(data);
         setLoading(false);
       })
-      .catch((err) => {
-        setError(err.message);
+      .catch((err: unknown) => {
+        const msg =
+          err instanceof Error ? err.message : "Errore sconosciuto";
+
+        setError(msg);
         setLoading(false);
+
+        // token scaduto/errato → logout soft
+        localStorage.removeItem("token");
+        navigate("/", { replace: true });
       });
-  }, []);
+  }, [navigate]);
+
+  /* ===============================
+     UI
+     =============================== */
 
   return (
     <div className="relative min-h-screen flex flex-col items-center justify-center text-white font-poppins px-4 overflow-hidden">
-      {/* Sfondo sfocato */}
+
+      <PlaneCursor zIndex={100} size={42} trailCount={3} />
+
+      {/* Background */}
       <div
         className="absolute top-0 left-0 w-full h-full -z-20"
         style={{
@@ -81,13 +120,11 @@ const Home = () => {
           transform: "scale(1.05)",
         }}
       />
-      {/* Overlay scuro */}
+
+      {/* Overlay */}
       <div className="absolute top-0 left-0 w-full h-full bg-black/40 -z-10" />
 
-      {/* TopBar con profilo */}
-      <TopBarHome />
-
-      {/* Mappa Leaflet */}
+      {/* Mappa */}
       <div className="absolute top-0 left-0 w-full h-full -z-30">
         <MapContainer
           center={[20, 0]}
@@ -98,48 +135,81 @@ const Home = () => {
           zoomControl={false}
           attributionControl={false}
           className="w-full h-full"
-          aria-label="Mappa mondo"
         >
           <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
         </MapContainer>
       </div>
 
-      {/* Contenuto principale: dati utente + card */}
+      {/* Contenuto */}
       <main className="flex-1 flex flex-col items-center justify-center pt-[100px] z-10 gap-8 px-4">
+
         {loading && <p>Caricamento dati utente...</p>}
-        {error && <p className="text-red-500">{error}</p>}
+
+        {error && (
+          <p className="text-red-500 font-semibold">{error}</p>
+        )}
+
         {user && (
           <div className="mb-8 text-center">
-            <h2 className="text-2xl font-bold">Benvenuto, {user.nome}</h2>
+
+            <h2 className="text-2xl font-bold">
+              <TextType
+                as="span"
+                texts={[
+                  `Benvenut@, ${user.nome}`,
+                  "Pronto a pianificare il tuo prossimo viaggio?",
+                  "Controlla zone, aggiornamenti e info.",
+                  "Are you ready?",
+                  "Let's Gooo!",
+                ]}
+                typingSpeed={55}
+                deletingSpeed={28}
+                pauseDuration={1400}
+                initialDelay={200}
+                loop
+                showCursor
+                cursorCharacter="_"
+                cursorBlinkDuration={0.55}
+              />
+            </h2>
+
             <p className="text-lg">{user.email}</p>
+
           </div>
         )}
 
+        {/* Cards */}
         <div className="flex flex-col md:flex-row items-center justify-center gap-6">
-          <ActionCard
-            title="Consulta"
-            subtitle="Zone"
-            icon={<FaGlobeEurope aria-label="Icona mappamondo" />}
-            onClick={goToZoneRischio}
-            backgroundGradient={gradientBackground}
-            backgroundGradientHover={gradientBackgroundHover}
-            textColor="text-white"
-            borderColor="border-blue-500"
-          />
-          <ActionCard
-            title="Dove mi trovo?"
-            subtitle="Registrati per maggior sicurezza"
-            icon={<FaPlane aria-label="Icona aereo" />}
-            onClick={goToRegisterTrip}
-            backgroundGradient={gradientBackground}
-            backgroundGradientHover={gradientBackgroundHover}
-            textColor="text-white"
-            borderColor="border-blue-500"
-          />
+
+          <div className="transition-transform duration-300 hover:scale-[1.04] hover:-translate-y-1">
+            <ActionCard
+              title="Consulta"
+              subtitle="Zone"
+              icon={<FaGlobeEurope />}
+              onClick={goToZoneRischio}
+              backgroundGradient={gradientBackground}
+              backgroundGradientHover={gradientBackgroundHover}
+              textColor="text-white"
+              borderColor="border-blue-500"
+            />
+          </div>
+
+          <div className="transition-transform duration-300 hover:scale-[1.04] hover:-translate-y-1">
+            <ActionCard
+              title="Dove mi trovo?"
+              subtitle="Registrati per maggior sicurezza"
+              icon={<FaPlane />}
+              onClick={goToRegisterTrip}
+              backgroundGradient={gradientBackground}
+              backgroundGradientHover={gradientBackgroundHover}
+              textColor="text-white"
+              borderColor="border-blue-500"
+            />
+          </div>
+
         </div>
       </main>
 
-      {/* Navigazione inferiore */}
       <BottomNav />
     </div>
   );

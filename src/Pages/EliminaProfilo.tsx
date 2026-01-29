@@ -3,10 +3,14 @@ import { useNavigate } from "react-router-dom";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
+import { useAuth } from "../Pages/AuthContext"; // aggiusta il path se serve
+
 export function EliminaProfilo() {
   const [loading, setLoading] = useState(false);
   const [motivo, setMotivo] = useState("");
+
   const navigate = useNavigate();
+  const { logout } = useAuth(); 
 
   async function handleDelete() {
     if (!motivo.trim()) {
@@ -19,48 +23,53 @@ export function EliminaProfilo() {
     }
 
     setLoading(true);
+
     const token = localStorage.getItem("token");
 
-   try {
-  const res = await fetch("http://localhost:8080/api/users/me", {
-    method: "DELETE",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ motivo }),
-  });
+    try {
+      const res = await fetch("http://localhost:8080/api/users/me", {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ motivo }),
+      });
 
-  if (!res.ok) {
-    const errorText = await res.text();
-    throw new Error(errorText || "Errore durante la cancellazione");
+      if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(errorText || "Errore durante la cancellazione");
+      }
+
+      toast.success("Profilo eliminato con successo.");
+
+      // ✅ Logout + redirect immediato
+      logout();
+      navigate("/");
+
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        toast.error("Errore: " + error.message);
+      } else {
+        toast.error("Errore sconosciuto");
+      }
+    } finally {
+      setLoading(false);
+    }
   }
-
-  toast.success("Profilo eliminato con successo.");
-
-  // Rimuove token e reindirizza alla landing page dopo breve attesa
-  setTimeout(() => {
-    localStorage.clear(); // logout completo
-    navigate("/"); // <-- qui reindirizzi alla landing page
-  }, 1500);
-
-} catch (error: unknown) {
-  if (error instanceof Error) {
-    toast.error("Errore: " + error.message);
-  } else {
-    toast.error("Errore sconosciuto");
-  }
-} finally {
-  setLoading(false);
-} }
 
   return (
     <div className="min-h-screen flex flex-col justify-center items-center bg-gradient-to-r from-petrolio to-azzurrochiaro p-6">
       <ToastContainer />
+
       <div className="bg-white bg-opacity-90 backdrop-blur-md p-8 rounded shadow-md max-w-lg w-full text-center">
-        <h1 className="text-3xl font-bold mb-6 text-gray-900">Elimina il mio profilo</h1>
+        <h1 className="text-3xl font-bold mb-6 text-gray-900">
+          Elimina il mio profilo
+        </h1>
+
         <p className="mb-6 text-gray-700">
-          Questa azione è <strong>irreversibile</strong>. Tutti i tuoi dati saranno cancellati definitivamente.
+          Questa azione è <strong>irreversibile</strong>. Tutti i tuoi dati saranno
+          cancellati definitivamente.
         </p>
 
         <textarea

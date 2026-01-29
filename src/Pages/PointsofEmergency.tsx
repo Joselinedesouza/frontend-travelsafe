@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   MapContainer,
   TileLayer,
@@ -9,8 +9,8 @@ import {
   Tooltip,
 } from "react-leaflet";
 import L from "leaflet";
-import { useRealTimePosition } from "../components/RealTimeLocation";
 import { Link } from "react-router-dom";
+import { useRealTimePosition } from "../components/RealTimeLocation";
 
 type PuntoEmergenza = {
   id: number;
@@ -34,6 +34,24 @@ type LocationRecord = {
   timestamp: number;
 };
 
+interface OverpassElement {
+  type: "node" | "way" | string;
+  id: number;
+  lat?: number;
+  lon?: number;
+  center?: { lat: number; lon: number };
+  tags?: {
+    name?: string;
+    amenity?: string;
+    building?: string;
+    [key: string]: string | number | boolean | undefined;
+  };
+}
+interface OverpassResult {
+  elements: OverpassElement[];
+}
+
+// ✅ icone come nel tuo esempio: path assoluto da /public
 const iconOspedale = new L.Icon({
   iconUrl: "/hospital-building.png",
   iconSize: [30, 30],
@@ -55,12 +73,8 @@ const iconCaserma = new L.Icon({
   popupAnchor: [0, -30],
   className: "custom-marker-cursor",
 });
-const iconQuestura = new L.Icon({
-  iconUrl: "/policeman.png",
-  iconSize: [30, 30],
-  iconAnchor: [15, 30],
-  popupAnchor: [0, -30],
-});
+const iconQuestura = iconCaserma;
+
 const iconUser = new L.Icon({
   iconUrl: "/user-location.png",
   iconSize: [25, 25],
@@ -69,12 +83,30 @@ const iconUser = new L.Icon({
   className: "custom-marker-cursor",
 });
 
-function distanzaKm(
-  lat1: number,
-  lng1: number,
-  lat2: number,
-  lng2: number
-): number {
+const OVERPASS_ENDPOINTS = [
+  "https://overpass.kumi.systems/api/interpreter",
+  "https://overpass-api.de/api/interpreter",
+  "https://overpass.openstreetmap.ru/api/interpreter",
+];
+
+async function fetchOverpass(query: string, signal?: AbortSignal): Promise<OverpassResult> {
+  let lastErr: unknown = null;
+
+  for (const base of OVERPASS_ENDPOINTS) {
+    try {
+      const url = `${base}?data=${encodeURIComponent(query)}`;
+      const res = await fetch(url, { signal, headers: { Accept: "application/json" } });
+      if (!res.ok) throw new Error(`Overpass HTTP ${res.status}`);
+      return (await res.json()) as OverpassResult;
+    } catch (e) {
+      if (e instanceof DOMException && e.name === "AbortError") throw e;
+      lastErr = e;
+    }
+  }
+  throw lastErr instanceof Error ? lastErr : new Error("Overpass non disponibile. Riprova tra poco.");
+}
+
+function distanzaKm(lat1: number, lng1: number, lat2: number, lng2: number) {
   const R = 6371;
   const dLat = ((lat2 - lat1) * Math.PI) / 180;
   const dLng = ((lng2 - lng1) * Math.PI) / 180;
@@ -87,89 +119,122 @@ function distanzaKm(
   return R * c;
 }
 
-function FlyToUserPosition({
-  position,
-}: {
-  position: { lat: number; lng: number } | null;
-}) {
+function metersFromKm(km: number) {
+  return Math.round(km * 1000);
+}
+
+function FlyToUserPosition({ position }: { position: { lat: number; lng: number } | null }) {
   const map = useMap();
   useEffect(() => {
-    if (position) {
-      map.flyTo([position.lat, position.lng], 15, { duration: 2 });
-    }
+    if (position) map.flyTo([position.lat, position.lng], 15, { duration: 1.2 });
   }, [position, map]);
   return null;
 }
 
-interface OverpassElement {
-  type: "node" | "way" | string;
-  id: number;
-  lat?: number;
-  lon?: number;
-  center?: {
-    lat: number;
-    lon: number;
-  };
-  tags?: {
-    name?: string;
-    amenity?: string;
-    building?: string;
-    [key: string]: string | number | boolean | undefined;
-  };
-}
-
-interface OverpassResult {
-  elements: OverpassElement[];
+function getIconByType(tipo: PuntoEmergenza["tipo"]) {
+  if (tipo === "pharmacy") return iconFarmacia;
+  if (tipo === "police") return iconCaserma;
+  return iconOspedale;
 }
 
 export default function PointsofEmergency() {
-  const { position: userPosition, error, loading, aggiornaPosizione } =
+  const { position: userPosition, error: geoError, loading: geoLoading, aggiornaPosizione } =
     useRealTimePosition();
+
+  const [radiusKm, setRadiusKm] = useState<number>(2);
 
   const [puntiEmergenza, setPuntiEmergenza] = useState<PuntoEmergenza[]>([]);
   const [puntiDenuncia, setPuntiDenuncia] = useState<PuntoDenuncia[]>([]);
 
-  const [fetchErrorEmergenza, setFetchErrorEmergenza] = useState<string | null>(null);
-  const [fetchErrorDenuncia, setFetchErrorDenuncia] = useState<string | null>(null);
-
   const [address, setAddress] = useState<string | null>(null);
+
+  const [loadingPoints, setLoadingPoints] = useState(false);
   const [saving, setSaving] = useState(false);
+
+  const [fetchError, setFetchError] = useState<string | null>(null);
+
   const [savedLocations, setSavedLocations] = useState<LocationRecord[]>(() => {
     const saved = localStorage.getItem("savedLocations");
     return saved ? JSON.parse(saved) : [];
   });
 
-  // Fetch punti emergenza (ospedali, farmacie, caserme)
-  async function fetchPuntiEmergenza(lat: number, lng: number) {
-    setFetchErrorEmergenza(null);
+  const abortRef = useRef<AbortController | null>(null);
 
-    const query = `
+  const gradientBackground = `linear-gradient(
+    to right,
+    rgba(0,0,0,0.9) 0%,
+    rgb(93,174,220) 10%,
+    rgba(122,205,253,0.3) 50%,
+    rgb(52,124,165) 90%,
+    rgba(0,0,0,0.9) 100%
+  )`;
+
+  async function fetchAddress(lat: number, lng: number, signal?: AbortSignal) {
+    try {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`,
+        { signal, headers: { Accept: "application/json" } }
+      );
+      if (!res.ok) throw new Error("Errore recupero indirizzo");
+      const data = await res.json();
+      setAddress(data.display_name || "Indirizzo non disponibile");
+    } catch (e) {
+      if (e instanceof DOMException && e.name === "AbortError") return;
+      setAddress("Indirizzo non disponibile");
+    }
+  }
+
+  async function fetchAllPoints(lat: number, lng: number) {
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
+    setLoadingPoints(true);
+    setFetchError(null);
+
+    // ✅ query emergenza (ospedale/farmacia/polizia) più realistica
+    const qEmergenza = `
       [out:json][timeout:25];
       (
-        node["amenity"="hospital"](around:2000,${lat},${lng});
-        way["amenity"="hospital"](around:2000,${lat},${lng});
-        node["amenity"="pharmacy"](around:2000,${lat},${lng});
-        way["amenity"="pharmacy"](around:2000,${lat},${lng});
-        node["amenity"="police"](around:2000,${lat},${lng});
-        way["amenity"="police"](around:2000,${lat},${lng});
-        node["building"="police"](around:2000,${lat},${lng});
-        way["building"="police"](around:2000,${lat},${lng});
+        node["amenity"="hospital"](around:3000,${lat},${lng});
+        way["amenity"="hospital"](around:3000,${lat},${lng});
+        node["amenity"="pharmacy"](around:2500,${lat},${lng});
+        way["amenity"="pharmacy"](around:2500,${lat},${lng});
+        node["amenity"="police"](around:4000,${lat},${lng});
+        way["amenity"="police"](around:4000,${lat},${lng});
+        node["building"="police"](around:4000,${lat},${lng});
+        way["building"="police"](around:4000,${lat},${lng});
       );
       out center;
     `;
 
-    const url = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`;
+    // ✅ query denuncia (questure/commissariati) più larga
+    const qDenuncia = `
+      [out:json][timeout:25];
+      (
+        node["amenity"="police"](around:6000,${lat},${lng});
+        way["amenity"="police"](around:6000,${lat},${lng});
+        node["building"="police"](around:6000,${lat},${lng});
+        way["building"="police"](around:6000,${lat},${lng});
+      );
+      out center;
+    `;
 
     try {
-      const res = await fetch(url);
-      if (!res.ok) throw new Error("Errore nel recupero dati punti emergenza");
-      const data: OverpassResult = await res.json();
+      await fetchAddress(lat, lng, controller.signal);
 
-      const parsed: PuntoEmergenza[] = data.elements
-        .map((el: OverpassElement) => {
-          const lat = el.lat ?? el.center?.lat;
-          const lng = el.lon ?? el.center?.lon;
-          if (lat === undefined || lng === undefined) return null;
+      const [dataEmergenza, dataDenuncia] = await Promise.all([
+        fetchOverpass(qEmergenza, controller.signal),
+        fetchOverpass(qDenuncia, controller.signal),
+      ]);
+
+      const emergenzaParsed: PuntoEmergenza[] = dataEmergenza.elements
+        .map((el) => {
+          const plat = el.lat ?? el.center?.lat;
+          const plng = el.lon ?? el.center?.lon;
+
+          // ✅ FIX: non usare !plat / !plng
+          if (plat == null || plng == null) return null;
 
           let tipo: PuntoEmergenza["tipo"] = "unknown";
           if (el.tags?.amenity === "hospital") tipo = "hospital";
@@ -186,97 +251,86 @@ export default function PointsofEmergency() {
                 : tipo === "pharmacy"
                 ? "Farmacia"
                 : tipo === "police"
-                ? "Caserma"
-                : "Sconosciuto"),
-            lat,
-            lng,
+                ? "Polizia"
+                : "Punto"),
+            lat: plat,
+            lng: plng,
             tipo,
           };
         })
-        .filter((el): el is PuntoEmergenza => el !== null);
+        .filter((x): x is PuntoEmergenza => x !== null);
 
-      setPuntiEmergenza(parsed);
-    } catch (e: unknown) {
-      if (e instanceof Error) {
-        setFetchErrorEmergenza(e.message);
-      } else {
-        setFetchErrorEmergenza("Errore generico fetch punti emergenza");
-      }
-    }
-  }
+      const denunciaParsed: PuntoDenuncia[] = dataDenuncia.elements
+        .map((el) => {
+          const plat = el.lat ?? el.center?.lat;
+          const plng = el.lon ?? el.center?.lon;
+          if (plat == null || plng == null) return null;
 
-  // Fetch punti denuncia (questure / commissariati)
-  async function fetchPuntiDenuncia(lat: number, lng: number) {
-    setFetchErrorDenuncia(null);
-
-    const query = `
-      [out:json][timeout:25];
-      (
-        node["amenity"="police"](around:5000,${lat},${lng});
-        way["amenity"="police"](around:5000,${lat},${lng});
-        node["building"="police"](around:5000,${lat},${lng});
-        way["building"="police"](around:5000,${lat},${lng});
-      );
-      out center;
-    `;
-    const url = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`;
-
-    try {
-      const res = await fetch(url);
-      if (!res.ok) throw new Error("Errore nel recupero dati punti denuncia");
-      const data: OverpassResult = await res.json();
-
-      const parsed: PuntoDenuncia[] = data.elements
-        .map((el: OverpassElement) => {
-          const lat = el.lat ?? el.center?.lat;
-          const lng = el.lon ?? el.center?.lon;
-          if (lat === undefined || lng === undefined) return null;
           return {
             id: el.id,
             nome: el.tags?.name || "Questura / Commissariato",
-            lat,
-            lng,
+            lat: plat,
+            lng: plng,
           };
         })
-        .filter((el): el is PuntoDenuncia => el !== null);
+        .filter((x): x is PuntoDenuncia => x !== null);
 
-      setPuntiDenuncia(parsed);
-    } catch (e: unknown) {
-      if (e instanceof Error) {
-        setFetchErrorDenuncia(e.message);
-      } else {
-        setFetchErrorDenuncia("Errore generico fetch punti denuncia");
-      }
-    }
-  }
+      // ✅ dedup
+      const uniqE = new Map<string, PuntoEmergenza>();
+      for (const p of emergenzaParsed) uniqE.set(`${p.tipo}-${p.id}`, p);
 
-  // Fetch indirizzo (reverse geocoding)
-  async function fetchAddress(lat: number, lng: number) {
-    try {
-      const res = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`
-      );
-      if (!res.ok) throw new Error("Errore recupero indirizzo");
-      const data = await res.json();
-      setAddress(data.display_name || "Indirizzo non disponibile");
-    } catch {
-      setAddress("Errore recupero indirizzo");
+      const uniqD = new Map<number, PuntoDenuncia>();
+      for (const p of denunciaParsed) uniqD.set(p.id, p);
+
+      setPuntiEmergenza(Array.from(uniqE.values()));
+      setPuntiDenuncia(Array.from(uniqD.values()));
+    } catch (e) {
+      if (e instanceof DOMException && e.name === "AbortError") return;
+      setFetchError(e instanceof Error ? e.message : "Errore nel recupero punti");
+      setPuntiEmergenza([]);
+      setPuntiDenuncia([]);
+    } finally {
+      setLoadingPoints(false);
     }
   }
 
   useEffect(() => {
-    if (userPosition) {
-      fetchAddress(userPosition.lat, userPosition.lng);
-      fetchPuntiEmergenza(userPosition.lat, userPosition.lng);
-      fetchPuntiDenuncia(userPosition.lat, userPosition.lng);
-    }
+    if (userPosition) fetchAllPoints(userPosition.lat, userPosition.lng);
+    return () => abortRef.current?.abort();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userPosition]);
+
+  const emergenzaVicini = useMemo(() => {
+    if (!userPosition) return [];
+    return puntiEmergenza
+      .map((p) => ({
+        ...p,
+        dist: distanzaKm(userPosition.lat, userPosition.lng, p.lat, p.lng),
+      }))
+      .filter((p) => p.dist <= radiusKm)
+      .sort((a, b) => a.dist - b.dist)
+      .slice(0, 12);
+  }, [puntiEmergenza, userPosition, radiusKm]);
+
+  const denunciaVicini = useMemo(() => {
+    if (!userPosition) return [];
+    // denuncia: almeno 2km, altrimenti spesso vuoto
+    const r = Math.max(radiusKm, 2);
+    return puntiDenuncia
+      .map((p) => ({
+        ...p,
+        dist: distanzaKm(userPosition.lat, userPosition.lng, p.lat, p.lng),
+      }))
+      .filter((p) => p.dist <= r)
+      .sort((a, b) => a.dist - b.dist)
+      .slice(0, 10);
+  }, [puntiDenuncia, userPosition, radiusKm]);
 
   async function salvaPosizione() {
     if (!userPosition || !address) return;
     setSaving(true);
 
-    const nuovoRecord: LocationRecord = {
+    const nuovo: LocationRecord = {
       lat: userPosition.lat,
       lng: userPosition.lng,
       address,
@@ -284,166 +338,296 @@ export default function PointsofEmergency() {
     };
 
     try {
-      const nuoviRecord = [...savedLocations, nuovoRecord];
-      setSavedLocations(nuoviRecord);
-      localStorage.setItem("savedLocations", JSON.stringify(nuoviRecord));
+      const nuovi = [nuovo, ...savedLocations].slice(0, 20);
+      setSavedLocations(nuovi);
+      localStorage.setItem("savedLocations", JSON.stringify(nuovi));
 
-      // Salvataggio backend (modifica URL se serve)
-      const response = await fetch("http://localhost:8080/api/location/save", {
+      // ✅ relativo (funziona anche in deploy)
+      const res = await fetch("/api/location/save", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(nuovoRecord),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(nuovo),
       });
-
-      if (!response.ok) {
-        throw new Error(`Errore nel salvataggio backend: ${response.statusText}`);
-      }
-    } catch (error) {
-      console.error("Errore salvataggio posizione:", error);
-      alert("Errore durante il salvataggio della posizione. Riprova.");
+      if (!res.ok) throw new Error("Errore salvataggio backend");
+    } catch {
+      alert("Errore durante il salvataggio. Riprova.");
     } finally {
       setSaving(false);
     }
   }
 
+  const anyError = geoError ?? fetchError ?? null;
+
   return (
-    <div className="min-h-screen w-full relative p-3 pt-20 font-sans bg-gradient-to-r from-blue-900 to-teal-400 text-white flex flex-col items-center">
-      <div className="fixed top-16 right-6 z-50">
-        <Link
-          to="/home"
-          className="text-teal-200 font-semibold underline hover:text-teal-100"
+    <div className="min-h-screen w-full px-4 py-6 text-[#e0f2f1]" style={{ background: gradientBackground }}>
+      <div className="mx-auto w-full max-w-6xl">
+        {/* Top bar */}
+        <div
+          className="mb-4 flex flex-col gap-3 rounded-2xl p-4 shadow-lg backdrop-blur-md md:flex-row md:items-center md:justify-between"
+          style={{ background: "rgba(255,255,255,0.08)" }}
         >
-          Torna alla Home
-        </Link>
-      </div>
+          <div>
+            <h1 className="text-2xl font-bold">Punti di Emergenza</h1>
+            <p className="mt-1 text-sm text-[#e0f2f1]/80">
+              Trova ospedali, farmacie e polizia vicino a te. Salva la posizione e ottieni indicazioni.
+            </p>
+          </div>
 
-      <div className="max-w-xl w-full text-center mb-3">
-        {userPosition
-          ? `Posizione attuale: lat ${userPosition.lat.toFixed(
-              6
-            )}, lng ${userPosition.lng.toFixed(6)}`
-          : "Posizione non disponibile"}
-      </div>
+          <Link to="/home" className="font-semibold underline hover:text-[rgb(52,124,165)]">
+            Torna alla Home
+          </Link>
+        </div>
 
-      <div className="max-w-xl w-full text-center mb-3 italic">
-        {address || "Caricamento indirizzo..."}
-      </div>
+        {/* Controls */}
+        <div
+          className="mb-4 grid gap-4 rounded-2xl p-4 shadow-lg backdrop-blur-md md:grid-cols-[1fr_220px_220px]"
+          style={{ background: "rgba(255,255,255,0.08)" }}
+        >
+          <div>
+            <p className="text-sm text-[#e0f2f1]/70">Posizione attuale</p>
+            <p className="font-semibold">
+              {userPosition
+                ? `lat ${userPosition.lat.toFixed(6)}, lng ${userPosition.lng.toFixed(6)}`
+                : "Posizione non disponibile"}
+            </p>
+            <p className="mt-1 text-sm italic text-[#e0f2f1]/80">
+              {address ? address : "Caricamento indirizzo..."}
+            </p>
+          </div>
 
-      <h2 className="max-w-xl w-full mb-4 text-center text-xl font-semibold">
-        Punti di Emergenza Vicini a Te
-      </h2>
+          <div>
+            <p className="text-sm font-semibold">Raggio</p>
+            <select
+              value={radiusKm}
+              onChange={(e) => setRadiusKm(Number(e.target.value))}
+              className="mt-2 w-full rounded-xl border border-white/15 bg-black/30 px-4 py-3 text-sm font-semibold text-[#e0f2f1] outline-none backdrop-blur-md"
+            >
+              <option value={1}>1 km</option>
+              <option value={2}>2 km</option>
+              <option value={3}>3 km</option>
+              <option value={5}>5 km</option>
+            </select>
+            <p className="mt-1 text-xs text-[#e0f2f1]/70">Filtra i risultati vicino a te.</p>
+          </div>
 
-      <MapContainer
-        center={userPosition ?? [41.9028, 12.4964]}
-        zoom={13}
-        className="w-full max-w-xl h-60 rounded-lg mb-6"
-      >
-        <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+          <div className="flex flex-col gap-2">
+            <button
+              onClick={() => (window.location.href = "tel:112")}
+              className="rounded-xl bg-gradient-to-r from-red-600 to-red-900 px-4 py-3 text-sm font-bold text-white hover:brightness-110 transition"
+            >
+              Chiama 112
+            </button>
 
-        <FlyToUserPosition position={userPosition} />
+            <button
+              onClick={aggiornaPosizione}
+              disabled={geoLoading}
+              className={`rounded-xl px-4 py-3 text-sm font-bold shadow-sm transition ${
+                geoLoading
+                  ? "cursor-not-allowed bg-white/10 text-[#e0f2f1]/70"
+                  : "bg-[#e0f2f1] text-[rgb(52,124,165)] hover:bg-white"
+              }`}
+            >
+              {geoLoading ? "Aggiorno…" : "Aggiorna posizione"}
+            </button>
 
-        {userPosition && (
-          <Marker position={[userPosition.lat, userPosition.lng]} icon={iconUser}>
-            <Popup>Sei qui</Popup>
-          </Marker>
+            <button
+              onClick={() => userPosition && fetchAllPoints(userPosition.lat, userPosition.lng)}
+              disabled={!userPosition || loadingPoints}
+              className={`rounded-xl px-4 py-3 text-sm font-bold shadow-sm transition ${
+                !userPosition || loadingPoints
+                  ? "cursor-not-allowed bg-white/10 text-[#e0f2f1]/70"
+                  : "bg-black/30 text-[#e0f2f1] hover:bg-black/40"
+              }`}
+            >
+              {loadingPoints ? "Carico…" : "Ricarica punti"}
+            </button>
+
+            <button
+              onClick={salvaPosizione}
+              disabled={!userPosition || !address || saving}
+              className="rounded-xl bg-gradient-to-r from-green-600 to-green-900 px-4 py-3 text-sm font-bold text-white disabled:opacity-50 hover:brightness-110 transition"
+            >
+              {saving ? "Salvataggio…" : "Salva posizione"}
+            </button>
+          </div>
+        </div>
+
+        {anyError && (
+          <div className="mb-4 rounded-2xl border border-red-300/30 bg-red-500/15 p-3 text-sm text-[#e0f2f1]">
+            <span className="font-semibold">Errore:</span> {anyError}
+          </div>
         )}
 
-        {puntiEmergenza.map((p) => {
-          let icon = iconOspedale;
-          if (p.tipo === "pharmacy") icon = iconFarmacia;
-          else if (p.tipo === "police") icon = iconCaserma;
-          else if (p.tipo === "hospital") icon = iconOspedale;
-
-          const dist = userPosition
-            ? distanzaKm(userPosition.lat, userPosition.lng, p.lat, p.lng)
-            : null;
-          const isNear = dist !== null && dist < 2;
-
-          return (
-            <Marker key={p.id} position={[p.lat, p.lng]} icon={icon}>
-              <Popup>{p.nome}</Popup>
-              <Tooltip direction="top" offset={[0, -10]} opacity={1} permanent={false}>
-                {dist !== null ? `${dist.toFixed(3)} km da te` : ""}
-              </Tooltip>
-              {isNear && (
-                <Circle
-                  center={[p.lat, p.lng]}
-                  radius={200}
-                  pathOptions={{
-                    color:
-                      p.tipo === "hospital"
-                        ? "red"
-                        : p.tipo === "pharmacy"
-                        ? "green"
-                        : "blue",
-                    fillOpacity: 0.2,
-                  }}
-                />
+        {/* Map + list */}
+        <div className="grid gap-4 lg:grid-cols-[1fr_360px]">
+          {/* Map */}
+          <div className="overflow-hidden rounded-2xl shadow-lg" style={{ border: "1px solid rgba(224,242,241,0.15)" }}>
+            <div className="relative h-[70vh] w-full">
+              {loadingPoints && (
+                <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/40">
+                  <div className="rounded-xl bg-black/70 px-4 py-2 text-sm font-semibold text-[#e0f2f1] backdrop-blur-md">
+                    Caricamento punti…
+                  </div>
+                </div>
               )}
-            </Marker>
-          );
-        })}
 
-        {/* Marker punti denuncia (questure/commissariati) */}
-        {puntiDenuncia.map((p) => (
-          <Marker key={p.id} position={[p.lat, p.lng]} icon={iconQuestura}>
-            <Popup>{p.nome}</Popup>
-          </Marker>
-        ))}
-      </MapContainer>
+              <MapContainer
+                center={userPosition ?? [41.9028, 12.4964]}
+                zoom={userPosition ? 14 : 5}
+                style={{ height: "100%", width: "100%" }}
+              >
+                <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                <FlyToUserPosition position={userPosition} />
 
+                {userPosition && (
+                  <>
+                    <Circle
+                      center={[userPosition.lat, userPosition.lng]}
+                      radius={metersFromKm(radiusKm)}
+                      pathOptions={{ color: "rgb(52,124,165)", fillOpacity: 0.08 }}
+                    />
 
-      <div className="max-w-md w-full flex flex-col gap-4 mb-6">
-        <button
-          onClick={() => (window.location.href = "tel:112")}
-          className="w-full rounded-md bg-gradient-to-r from-red-600 to-red-900 px-4 py-2 font-bold text-white hover:brightness-110 transition"
-        >
-          Chiama 112
-        </button>
+                    <Marker position={[userPosition.lat, userPosition.lng]} icon={iconUser}>
+                      <Popup>Sei qui</Popup>
+                    </Marker>
+                  </>
+                )}
 
-        <button
-          onClick={aggiornaPosizione}
-          disabled={loading}
-          className="w-full rounded-md bg-gradient-to-r from-blue-600 to-blue-900 px-4 py-2 font-bold text-white disabled:opacity-50 hover:brightness-110 transition"
-        >
-          {loading ? "Caricamento..." : "Aggiorna Posizione"}
-        </button>
+                {emergenzaVicini.map((p) => (
+                  <Marker key={`${p.tipo}-${p.id}`} position={[p.lat, p.lng]} icon={getIconByType(p.tipo)}>
+                    <Popup>
+                      <strong>{p.nome}</strong>
+                      <br />
+                      {p.dist.toFixed(2)} km da te
+                    </Popup>
+                    <Tooltip direction="top" offset={[0, -10]} opacity={1}>
+                      {p.dist.toFixed(2)} km
+                    </Tooltip>
 
-        <button
-          onClick={salvaPosizione}
-          disabled={!userPosition || !address || saving}
-          className="w-full rounded-md bg-gradient-to-r from-green-600 to-green-900 px-4 py-2 font-bold text-white disabled:opacity-50 hover:brightness-110 transition"
-        >
-          {saving ? "Salvataggio..." : "Registra Posizione di Emergenza"}
-        </button>
+                    {p.dist <= 1 && (
+                      <Circle
+                        center={[p.lat, p.lng]}
+                        radius={200}
+                        pathOptions={{
+                          color: p.tipo === "hospital" ? "red" : p.tipo === "pharmacy" ? "lime" : "dodgerblue",
+                          fillOpacity: 0.15,
+                        }}
+                      />
+                    )}
+                  </Marker>
+                ))}
+
+                {denunciaVicini.map((p) => (
+                  <Marker key={`denuncia-${p.id}`} position={[p.lat, p.lng]} icon={iconQuestura}>
+                    <Popup>{p.nome}</Popup>
+                  </Marker>
+                ))}
+              </MapContainer>
+            </div>
+          </div>
+
+          {/* Right panel */}
+          <div
+            className="rounded-2xl p-4 shadow-lg backdrop-blur-md"
+            style={{ background: "rgba(255,255,255,0.08)" }}
+          >
+            <h3 className="text-lg font-semibold">Vicino a te</h3>
+            <p className="mt-1 text-sm text-[#e0f2f1]/75">
+              Risultati entro <span className="font-semibold">{radiusKm} km</span>.
+            </p>
+
+            <div className="mt-3 space-y-4 max-h-[58vh] overflow-auto pr-1">
+              <div>
+                <p className="mb-2 text-sm font-semibold">Emergenza</p>
+                {emergenzaVicini.length === 0 ? (
+                  <div className="rounded-xl bg-black/20 p-3 text-sm text-[#e0f2f1]/75">
+                    Nessun punto trovato nel raggio.
+                  </div>
+                ) : (
+                  <ul className="space-y-2">
+                    {emergenzaVicini.map((p) => (
+                      <li key={`list-${p.tipo}-${p.id}`} className="rounded-xl bg-black/20 p-3">
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <p className="font-semibold">{p.nome}</p>
+                            <p className="text-xs text-[#e0f2f1]/70">
+                              {p.tipo === "hospital"
+                                ? "Ospedale"
+                                : p.tipo === "pharmacy"
+                                ? "Farmacia"
+                                : p.tipo === "police"
+                                ? "Polizia"
+                                : "Punto"}{" "}
+                              • {p.dist.toFixed(2)} km
+                            </p>
+                          </div>
+
+                          <a
+                            className="shrink-0 rounded-lg bg-[#e0f2f1] px-3 py-1.5 text-xs font-bold text-[rgb(52,124,165)] hover:bg-white"
+                            href={`https://www.google.com/maps/dir/?api=1&destination=${p.lat},${p.lng}`}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            Indicazioni
+                          </a>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+
+              <div>
+                <p className="mb-2 text-sm font-semibold">Denuncia</p>
+                {denunciaVicini.length === 0 ? (
+                  <div className="rounded-xl bg-black/20 p-3 text-sm text-[#e0f2f1]/75">
+                    Nessun commissariato nel raggio.
+                  </div>
+                ) : (
+                  <ul className="space-y-2">
+                    {denunciaVicini.map((p) => (
+                      <li key={`list-denuncia-${p.id}`} className="rounded-xl bg-black/20 p-3">
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <p className="font-semibold">{p.nome}</p>
+                            <p className="text-xs text-[#e0f2f1]/70">{p.dist.toFixed(2)} km</p>
+                          </div>
+
+                          <a
+                            className="shrink-0 rounded-lg bg-black/30 px-3 py-1.5 text-xs font-bold text-[#e0f2f1] hover:bg-black/40"
+                            href={`https://www.google.com/maps/dir/?api=1&destination=${p.lat},${p.lng}`}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            Indicazioni
+                          </a>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+
+              {savedLocations.length > 0 && (
+                <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
+                  <p className="text-sm font-semibold">Posizioni salvate</p>
+                  <ul className="mt-2 space-y-2">
+                    {savedLocations.slice(0, 5).map((loc) => (
+                      <li key={loc.timestamp} className="text-xs text-[#e0f2f1]/80">
+                        {new Date(loc.timestamp).toLocaleString()} — {loc.address}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <style>{`
+          .custom-marker-cursor { cursor: pointer !important; }
+        `}</style>
       </div>
-
-      {savedLocations.length > 0 && (
-        <div className="max-w-xl w-full bg-white bg-opacity-20 rounded-lg p-4 mb-6 text-white overflow-y-auto max-h-48">
-          <h3 className="mb-3 text-lg font-semibold">Posizioni di Emergenza Salvate</h3>
-          <ul className="list-none p-0 m-0">
-            {savedLocations.map((loc) => (
-              <li key={loc.timestamp} className="mb-2">
-                {new Date(loc.timestamp).toLocaleString()} - {loc.address}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      {(error || fetchErrorEmergenza || fetchErrorDenuncia) && (
-        <div className="max-w-xl w-full bg-red-600 rounded-md p-3 text-center text-white mb-6">
-          {error ?? fetchErrorEmergenza ?? fetchErrorDenuncia}
-        </div>
-      )}
-
-      <style>{`
-        .custom-marker-cursor {
-          cursor: pointer !important;
-        }
-      `}</style>
     </div>
   );
 }

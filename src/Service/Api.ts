@@ -1,4 +1,6 @@
 import type { ZoneRischioForm } from "./ZoneRischioForm";
+import { triggerLogout } from "./authManager";
+
 
 export type MotivoRequest = {
   motivo: string;
@@ -59,61 +61,69 @@ async function handleResponse<T>(res: Response): Promise<T | undefined> {
     throw new Error(errorMsg || "Errore sconosciuto");
   }
 }
+function logoutAndRedirect(message?: string) {
+        triggerLogout();
+
+  // opzionale: salva un messaggio da mostrare dopo il redirect
+  if (message) sessionStorage.setItem("auth_error", message);
+
+  // redirect
+  window.location.href = "/login"; // oppure "/" se la tua home è login
+}
+
+async function apiFetch<T>(url: string, init?: RequestInit): Promise<T | undefined> {
+  const res = await fetch(url, init);
+
+  try {
+    return await handleResponse<T>(res);
+  } catch (err: any) {
+    // ✅ QUI gestisci logout automatico
+    if (res.status === 401 || res.status === 403) {
+      logoutAndRedirect(err?.message);
+    }
+    throw err;
+  }
+}
+
 
 // --- Zone a rischio ---
 
-export async function fetchZones(token: string): Promise<ZoneRischioForm[]> {
-  const res = await fetch(`${BASE_URL}/zone-rischio`, {
+export function fetchZones(token: string): Promise<ZoneRischioForm[]> {
+  return apiFetch<ZoneRischioForm[]>(`${BASE_URL}/zone-rischio`, {
     headers: getHeaders(token),
-  });
-  return handleResponse<ZoneRischioForm[]>(res) as Promise<ZoneRischioForm[]>;
+  }) as Promise<ZoneRischioForm[]>;
 }
 
 export async function createZone(zone: ZoneRischioForm, token: string): Promise<ZoneRischioForm> {
-  const res = await fetch(`${BASE_URL}/zone-rischio`, {
+  return apiFetch<ZoneRischioForm>(`${BASE_URL}/zone-rischio`, {
     method: "POST",
     headers: getHeaders(token),
     body: JSON.stringify(zone),
-  });
-  return handleResponse<ZoneRischioForm>(res) as Promise<ZoneRischioForm>;
+  }) as Promise<ZoneRischioForm>;
 }
 
-export async function updateZone(id: number, zone: ZoneRischioForm, token: string): Promise<ZoneRischioForm> {
-  const res = await fetch(`${BASE_URL}/zone-rischio/${id}`, {
+
+export function updateZone(id: number, zone: ZoneRischioForm, token: string): Promise<ZoneRischioForm> {
+  return apiFetch<ZoneRischioForm>(`${BASE_URL}/zone-rischio/${id}`, {
     method: "PUT",
     headers: getHeaders(token),
     body: JSON.stringify(zone),
-  });
-
-  if (!res.ok) {
-    let errorMsg = "Errore sconosciuto";
-    try {
-      const errData = await res.json();
-      if (errData.message) errorMsg = errData.message;
-    } catch {
-      // ignora se non JSON
-    }
-    throw new Error(errorMsg);
-  }
-
-  return res.json() as Promise<ZoneRischioForm>;
+  }) as Promise<ZoneRischioForm>;
 }
 
 export async function deleteZone(id: number, token: string): Promise<void> {
-  const res = await fetch(`${BASE_URL}/zone-rischio/${id}`, {
+  await apiFetch<void>(`${BASE_URL}/zone-rischio/${id}`, {
     method: "DELETE",
     headers: getHeaders(token),
   });
-  await handleResponse<void>(res);
 }
 
 // --- Gestione Utenti ---
 
 export async function fetchUsers(token: string): Promise<User[]> {
-  const res = await fetch(`${BASE_URL}/users`, {
+  return apiFetch<User[]>(`${BASE_URL}/users`, {
     headers: getHeaders(token),
-  });
-  return handleResponse<User[]>(res) as Promise<User[]>;
+  }) as Promise<User[]>;
 }
 
 export async function activateUser(id: number, motivoRequest: MotivoRequest, token: string): Promise<void> {

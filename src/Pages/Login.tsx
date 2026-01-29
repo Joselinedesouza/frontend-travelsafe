@@ -1,74 +1,121 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../Pages/AuthContext";
+
+const API_URL = import.meta.env.VITE_API_URL as string;
+console.log("VITE_API_URL =", import.meta.env.VITE_API_URL);
+
+type LoginPayload = {
+  token: string;
+  email: string;
+  role: string;
+  nome?: string;
+  cognome?: string;
+  immagineProfilo?: string;
+  nickname?: string;
+  bio?: string;
+};
 
 export const Login = () => {
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [error, setError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+
   const navigate = useNavigate();
-  const { role, setToken, setUserEmail, setRole } = useAuth();
 
-  // Redirect immediato se ruolo già presente (utente loggato)
+  // prendo ANCHE i setter dal context
+  const { role, token, setToken, setUserEmail, setRole } = useAuth();
+
+  // redirect automatico solo se c'è token (evita loop)
   useEffect(() => {
-    if (role === "ADMIN") {
-      navigate("/admin/dashboard");
-    } else if (role) {
-      navigate("/home");
-    }
-  }, [role, navigate]);
+    if (!token) return;
+    if (role === "ADMIN") navigate("/admin/dashboard", { replace: true });
+    else if (role) navigate("/home", { replace: true });
+  }, [token, role, navigate]);
 
+  // animazione form
   useEffect(() => {
     const timer = setTimeout(() => setShowForm(true), 2000);
     return () => clearTimeout(timer);
   }, []);
 
+  // messaggio da logout automatico (apiFetch)
+  useEffect(() => {
+    const msg = sessionStorage.getItem("auth_error");
+    if (msg) {
+      setError(msg);
+      sessionStorage.removeItem("auth_error");
+    }
+  }, []);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    if (!API_URL) {
+      setError("Configurazione mancante: VITE_API_URL non è impostata.");
+      return;
+    }
+
+    const payloadToSend = {
+      email: formData.email.trim(),
+      password: formData.password,
+    };
+
     setIsLoading(true);
 
     try {
-      const response = await fetch("http://localhost:8080/api/auth/login", {
+      const response = await fetch(`${API_URL}/api/auth/login`, {
         method: "POST",
-        credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payloadToSend),
       });
 
-      const data = await response.json();
+      const raw = await response.text();
+      const parsed = raw ? safeJsonParse(raw) : null;
 
       if (!response.ok) {
-        throw new Error(data.message || "Errore durante il login");
+        const msg =
+          (parsed && (parsed.message || parsed.error)) ||
+          raw ||
+          `Errore durante il login (${response.status})`;
+        throw new Error(msg);
       }
 
-      // Salvo token e dati
+      const data = (parsed ?? null) as LoginPayload | null;
+
+      if (!data?.token || !data?.email || !data?.role) {
+        throw new Error("Risposta login non valida (mancano token/email/role).");
+      }
+
+      // set nel context (salva anche in localStorage tramite useEffect del context)
       setToken(data.token);
       setUserEmail(data.email);
       setRole(data.role);
 
-      setIsLoading(false);
-
-      // Redirect basato sul ruolo
-      if (data.role === "ADMIN") {
-        navigate("/admin/dashboard");
-      } else {
-        navigate("/home");
-      }
+      // redirect
+      if (data.role === "ADMIN") navigate("/admin/dashboard", { replace: true });
+      else navigate("/home", { replace: true });
     } catch (err: unknown) {
-      setIsLoading(false);
       if (err instanceof Error) setError(err.message);
       else setError("Errore sconosciuto");
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleGoogleLogin = () => {
-    window.location.href = "http://localhost:8080/oauth2/authorization/google";
+    if (!API_URL) {
+      setError("Configurazione mancante: VITE_API_URL non è impostata.");
+      return;
+    }
+    window.location.href = `${API_URL}/oauth2/authorization/google`;
   };
 
   return (
@@ -83,7 +130,7 @@ export const Login = () => {
         </div>
       )}
 
-      {showForm && !isLoading && (
+      {showForm && (
         <form
           onSubmit={handleSubmit}
           className="p-8 rounded-lg shadow-lg max-w-md w-full text-white bg-black/30 backdrop-blur-sm animate-fadeIn"
@@ -99,6 +146,7 @@ export const Login = () => {
             onChange={handleChange}
             required
             className="mb-4 p-3 rounded-md border border-transparent w-full bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#004d40] font-semibold"
+            disabled={isLoading}
           />
 
           <input
@@ -109,49 +157,46 @@ export const Login = () => {
             onChange={handleChange}
             required
             className="mb-4 p-3 rounded-md border border-transparent w-full bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#004d40] font-semibold"
+            disabled={isLoading}
           />
 
           {error && (
-            <p className="text-red-400 mb-4 font-semibold text-center">{error}</p>
+            <p className="text-red-400 mb-4 font-semibold text-center">
+              {error}
+            </p>
           )}
 
           <button
             type="submit"
+            disabled={isLoading}
             className="w-full py-3 rounded-md font-bold text-white transition-colors duration-300 mb-4"
-            style={{ backgroundColor: "#003f66" }}
-            onMouseEnter={(e) =>
-              (e.currentTarget.style.backgroundColor = "#66a7a3")
-            }
-            onMouseLeave={(e) =>
-              (e.currentTarget.style.backgroundColor = "#003f66")
-            }
-            onFocus={(e) =>
-              (e.currentTarget.style.backgroundColor = "#66a7a3")
-            }
-            onBlur={(e) =>
-              (e.currentTarget.style.backgroundColor = "#003f66")
-            }
+            style={{
+              backgroundColor: "#003f66",
+              opacity: isLoading ? 0.7 : 1,
+              cursor: isLoading ? "not-allowed" : "pointer",
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#66a7a3")}
+            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#003f66")}
+            onFocus={(e) => (e.currentTarget.style.backgroundColor = "#66a7a3")}
+            onBlur={(e) => (e.currentTarget.style.backgroundColor = "#003f66")}
           >
-            Accedi
+            {isLoading ? "Accesso in corso..." : "Accedi"}
           </button>
 
           <button
             type="button"
             onClick={handleGoogleLogin}
+            disabled={isLoading}
             className="w-full py-3 rounded-md font-bold text-white transition-colors duration-300"
-            style={{ backgroundColor: "#DB4437" }}
-            onMouseEnter={(e) =>
-              (e.currentTarget.style.backgroundColor = "#E57368")
-            }
-            onMouseLeave={(e) =>
-              (e.currentTarget.style.backgroundColor = "#DB4437")
-            }
-            onFocus={(e) =>
-              (e.currentTarget.style.backgroundColor = "#E57368")
-            }
-            onBlur={(e) =>
-              (e.currentTarget.style.backgroundColor = "#DB4437")
-            }
+            style={{
+              backgroundColor: "#DB4437",
+              opacity: isLoading ? 0.7 : 1,
+              cursor: isLoading ? "not-allowed" : "pointer",
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#E57368")}
+            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#DB4437")}
+            onFocus={(e) => (e.currentTarget.style.backgroundColor = "#E57368")}
+            onBlur={(e) => (e.currentTarget.style.backgroundColor = "#DB4437")}
           >
             Accedi con Google
           </button>
@@ -164,13 +209,15 @@ export const Login = () => {
           </p>
         </form>
       )}
-
-      {isLoading && (
-        <div className="flex flex-col items-center justify-center text-white">
-          <div className="text-6xl select-none">🛫</div>
-          <p className="mt-4 font-semibold text-lg">Accesso in corso...</p>
-        </div>
-      )}
     </div>
   );
 };
+
+// helper: parse JSON senza crash
+function safeJsonParse(text: string) {
+  try {
+    return JSON.parse(text);
+  } catch {
+    return null;
+  }
+}
