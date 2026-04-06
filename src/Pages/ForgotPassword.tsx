@@ -6,20 +6,19 @@ export const ForgotPassword = () => {
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const API_URL = import.meta.env.VITE_API_URL;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setMessage(null);
     setError(null);
 
     try {
-     const API_URL = import.meta.env.VITE_API_URL;
-
-const response = await fetch(`${API_URL}/api/auth/request-reset`, {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ email }),
-});
-     
+      const response = await fetch(`${API_URL}/api/auth/request-reset`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
 
       const text = await response.text();
 
@@ -39,7 +38,6 @@ const response = await fetch(`${API_URL}/api/auth/request-reset`, {
     }
   };
 
-  // Hover / focus helper
   const addHoverFocusStyles = (
     e: React.MouseEvent<HTMLButtonElement> | React.FocusEvent<HTMLButtonElement>
   ) => {
