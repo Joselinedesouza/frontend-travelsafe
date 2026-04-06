@@ -7,7 +7,7 @@ import "leaflet/dist/leaflet.css";
 import bgHome from "../assets/sfondohome.jpg";
 import { useCallback, useEffect, useState } from "react";
 import TextType from "../components/TextType";
-import PlaneCursor from "../components/PlaneCursor";
+
 
 const API_URL = import.meta.env.VITE_API_URL as string;
 
@@ -107,7 +107,7 @@ const Home = () => {
   return (
     <div className="relative min-h-screen flex flex-col items-center justify-center text-white font-poppins px-4 overflow-hidden">
 
-      <PlaneCursor zIndex={100} size={42} trailCount={3} />
+      
 
       {/* Background */}
       <div

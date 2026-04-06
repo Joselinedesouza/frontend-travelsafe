@@ -10,7 +10,7 @@ export interface User {
   id: number;
   nome: string;
   email: string;
-  ruolo: string;  // coerente con backend
+  ruolo: string; 
   [key: string]: unknown;
 }
 
@@ -19,7 +19,7 @@ export interface Review {
   testo: string;
   voto: number;
   dataCreazione: string;
-  autoreEmail: string;  // coerente con backend
+  autoreEmail: string;  
   risposta?: string | null;
   [key: string]: unknown;
 }
@@ -28,7 +28,7 @@ export interface Notifica {
   id: number;
   messaggio: string;
   userId: number;
-  timestamp: string;  // timestamp in formato ISO string
+  timestamp: string; 
 }
 
 const BASE_URL = "http://localhost:8080/api";
@@ -68,7 +68,7 @@ function logoutAndRedirect(message?: string) {
   if (message) sessionStorage.setItem("auth_error", message);
 
   // redirect
-  window.location.href = "/login"; // oppure "/" se la tua home è login
+  window.location.href = "/login"; // oppure "/"
 }
 
 async function apiFetch<T>(url: string, init?: RequestInit): Promise<T | undefined> {
@@ -77,7 +77,7 @@ async function apiFetch<T>(url: string, init?: RequestInit): Promise<T | undefin
   try {
     return await handleResponse<T>(res);
   } catch (err: any) {
-    // ✅ QUI gestisci logout automatico
+    // QUI gestisci logout automatico
     if (res.status === 401 || res.status === 403) {
       logoutAndRedirect(err?.message);
     }
