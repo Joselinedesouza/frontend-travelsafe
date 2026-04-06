@@ -12,14 +12,14 @@ export const ForgotPassword = () => {
     setError(null);
 
     try {
-      const response = await fetch(
-        "http://localhost:8080/api/auth/request-reset",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email }),
-        }
-      );
+     const API_URL = import.meta.env.VITE_API_URL;
+
+const response = await fetch(`${API_URL}/api/auth/request-reset`, {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ email }),
+});
+     
 
       const text = await response.text();
 
