@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../Pages/AuthContext"; // correzione import
 
+const API_URL = import.meta.env.VITE_API_URL as string;
+
 export function OAuth2Callback() {
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
@@ -24,13 +26,13 @@ export function OAuth2Callback() {
 
     async function fetchToken() {
       try {
-        const response = await fetch(
-          `http://localhost:8080/api/auth/oauth2/code/google?code=${code}`,
-          {
-            method: "GET",
-            credentials: "include",
-          }
-        );
+      const response = await fetch(
+  `${API_URL}/api/auth/oauth2/code/google?code=${code}`,
+  {
+    method: "GET",
+    credentials: "include",
+  }
+);
 
         const data = await response.json();
 

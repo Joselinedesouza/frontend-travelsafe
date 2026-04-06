@@ -8,6 +8,7 @@ import { useAuth } from "../Pages/AuthContext"; // aggiusta il path se serve
 export function EliminaProfilo() {
   const [loading, setLoading] = useState(false);
   const [motivo, setMotivo] = useState("");
+  const API_URL = import.meta.env.VITE_API_URL;
 
   const navigate = useNavigate();
   const { logout } = useAuth(); 
@@ -27,7 +28,7 @@ export function EliminaProfilo() {
     const token = localStorage.getItem("token");
 
     try {
-      const res = await fetch("http://localhost:8080/api/users/me", {
+      const res = await fetch(`${API_URL}/api/users/me`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,

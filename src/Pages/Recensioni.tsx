@@ -19,6 +19,7 @@ type NewReviewForm = {
 
 export default function Recensioni() {
   const navigate = useNavigate();
+  const API_URL = import.meta.env.VITE_API_URL;
   const [allReviews, setAllReviews] = useState<Review[]>([]);
   const [myReviews, setMyReviews] = useState<Review[]>([]);
   const [cities, setCities] = useState<{ id: number; nome: string }[]>([]);
@@ -41,8 +42,8 @@ export default function Recensioni() {
 
   async function fetchCities() {
     try {
-      const res = await fetch("/api/citta", {
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+      const res = await fetch(`${API_URL}/api/citta`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
       });
       if (!res.ok) throw new Error("Errore caricamento città");
       const data = await res.json();
@@ -55,7 +56,7 @@ export default function Recensioni() {
   async function fetchAllReviews() {
     setLoading(true);
     try {
-      const res = await fetch("/api/reviews", {
+      const res = await fetch(`${API_URL}/api/reviews`, {
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
       });
       if (!res.ok) throw new Error("Errore caricamento recensioni");
@@ -69,7 +70,7 @@ export default function Recensioni() {
 
   async function fetchMyReviews() {
     try {
-      const res = await fetch("/api/reviews/mine", {
+      const res = await fetch(`${API_URL}/api/reviews/mine`, {
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
       });
       if (!res.ok) throw new Error("Errore caricamento recensioni personali");
@@ -105,7 +106,9 @@ export default function Recensioni() {
     setError(null);
     try {
       const method = editingId ? "PUT" : "POST";
-      const url = editingId ? `/api/reviews/${editingId}` : "/api/reviews";
+      const url = editingId
+  ? `${API_URL}/api/reviews/${editingId}`
+  : `${API_URL}/api/reviews`;
 
       const res = await fetch(url, {
         method,
@@ -132,7 +135,7 @@ export default function Recensioni() {
   async function handleDelete(id: number) {
     if (!window.confirm("Sei sicuro di voler cancellare questa recensione?")) return;
     try {
-      const res = await fetch(`/api/reviews/${id}`, {
+      const res = await fetch(`${API_URL}/api/reviews/${id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
       });

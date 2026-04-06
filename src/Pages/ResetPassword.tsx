@@ -1,6 +1,8 @@
 import React, { useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
+const API_URL = import.meta.env.VITE_API_URL as string;
+
 export const ResetPassword = () => {
   const navigate = useNavigate();
   const [params] = useSearchParams();
@@ -44,14 +46,14 @@ export const ResetPassword = () => {
     setIsLoading(true);
 
     try {
-      const response = await fetch(
-        "http://localhost:8080/api/auth/reset-password",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ token, newPassword: password }),
-        }
-      );
+     const response = await fetch(
+  `${API_URL}/api/auth/reset-password`,
+  {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ token, newPassword: password }),
+  }
+);
 
       // il backend può rispondere con String o JSON: leggo come testo sempre
       const text = await response.text();

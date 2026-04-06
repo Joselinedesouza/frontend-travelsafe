@@ -8,12 +8,13 @@ type News = {
   sourceName: string;
   publishedAt: string;
 };
-
+const API_URL = import.meta.env.VITE_API_URL as string;
 export default function NewsByCity() {
   const [city, setCity] = useState("");
   const [news, setNews] = useState<News[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
 
   async function fetchNews() {
     if (!city.trim()) {
@@ -26,12 +27,15 @@ export default function NewsByCity() {
     setError(null);
 
     try {
-      const res = await fetch(`http://localhost:8080/api/news?city=${encodeURIComponent(city)}`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token") ?? ""}`,
-          "Content-Type": "application/json",
-        },
-      });
+    const res = await fetch(
+  `${API_URL}/api/news?city=${encodeURIComponent(city)}`,
+  {
+    headers: {
+      Authorization: `Bearer ${localStorage.getItem("token") ?? ""}`,
+      "Content-Type": "application/json",
+    },
+  }
+);
 
       if (!res.ok) {
         let message = "Errore nel recupero delle notizie";

@@ -16,6 +16,7 @@ type FormData = {
 
 export const Register = () => {
   const navigate = useNavigate();
+   const API_URL = import.meta.env.VITE_API_URL;
 
   const [formData, setFormData] = useState<FormData>({
     nome: "",
@@ -54,8 +55,8 @@ export const Register = () => {
       return;
     }
 
-    try {
-      const response = await fetch("http://localhost:8080/api/auth/register", {
+  try {
+      const response = await fetch(`${API_URL}/api/auth/register`, {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },

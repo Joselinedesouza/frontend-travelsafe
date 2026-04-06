@@ -13,6 +13,8 @@ type UserProfile = {
   immagineProfilo?: string;
 };
 
+const API_URL = import.meta.env.VITE_API_URL as string;
+
 export function UserProfile() {
   const navigate = useNavigate();
   const [user, setUser] = useState<UserProfile | null>(null);
@@ -29,9 +31,9 @@ export function UserProfile() {
       return;
     }
 
-    fetch("http://localhost:8080/api/user/profile", {
-      headers: { Authorization: `Bearer ${token}` },
-    })
+    fetch(`${API_URL}/api/user/profile`, {
+  headers: { Authorization: `Bearer ${token}` },
+})
       .then((res) => {
         if (!res.ok) throw new Error("Errore caricamento profilo");
         return res.json();
@@ -83,13 +85,13 @@ export function UserProfile() {
       if (formData.bio) formPayload.append("bio", formData.bio);
       if (imageFile) formPayload.append("immagineProfilo", imageFile);
 
-      const res = await fetch("http://localhost:8080/api/user/profile", {
-        method: "PUT",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        body: formPayload,
-      });
+     const res = await fetch(`${API_URL}/api/user/profile`, {
+  method: "PUT",
+  headers: {
+    Authorization: `Bearer ${token}`,
+  },
+  body: formPayload,
+});
       if (!res.ok) throw new Error("Errore nel salvataggio");
       const updated = await res.json();
 

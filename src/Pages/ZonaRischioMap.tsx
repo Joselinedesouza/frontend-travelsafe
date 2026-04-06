@@ -18,6 +18,7 @@ type NominatimResult = {
   lat: string;
   lon: string;
 };
+const API_URL = import.meta.env.VITE_API_URL as string;
 
 function FlyToPosition({ position }: { position: { lat: number; lng: number } }) {
   const map = useMap();
@@ -72,30 +73,47 @@ export default function ZonaRischioMapAutocomplete() {
   )`;
 
   async function fetchZone(lat: number, lng: number, rKm: number) {
-    abortZonesRef.current?.abort();
-    const controller = new AbortController();
-    abortZonesRef.current = controller;
+  abortZonesRef.current?.abort();
+  const controller = new AbortController();
+  abortZonesRef.current = controller;
 
-    setLoadingZones(true);
-    setError(null);
+  setLoadingZones(true);
+  setError(null);
 
-    try {
-      const res = await fetch(`/api/zone-rischio/search?lat=${lat}&lng=${lng}&radiusKm=${rKm}`, {
+  try {
+    const res = await fetch(
+      `${API_URL}/api/zone-rischio/search?lat=${lat}&lng=${lng}&radiusKm=${rKm}`,
+      {
         signal: controller.signal,
         headers: { Accept: "application/json" },
-      });
-      if (!res.ok) throw new Error(`Errore ${res.status}: ${res.statusText}`);
+      }
+    );
 
-      const zone: ZonaRischio[] = await res.json();
-      setZoneRischio(zone);
-    } catch (err) {
-      if (err instanceof DOMException && err.name === "AbortError") return;
-      setError(err instanceof Error ? err.message : "Errore nel caricamento delle zone a rischio");
-      setZoneRischio([]);
-    } finally {
-      setLoadingZones(false);
+    if (!res.ok) {
+      throw new Error(`Errore ${res.status}: ${res.statusText}`);
     }
+
+    const zone: ZonaRischio[] = await res.json();
+    setZoneRischio(zone);
+
+  } catch (err) {
+
+    if (err instanceof DOMException && err.name === "AbortError") {
+      return;
+    }
+
+    setError(
+      err instanceof Error
+        ? err.message
+        : "Errore nel caricamento delle zone a rischio"
+    );
+
+    setZoneRischio([]);
+
+  } finally {
+    setLoadingZones(false);
   }
+}
 
   async function cercaLuoghi(query: string) {
     const q = query.trim();

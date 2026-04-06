@@ -233,7 +233,7 @@ export default function PointsofEmergency() {
           const plat = el.lat ?? el.center?.lat;
           const plng = el.lon ?? el.center?.lon;
 
-          // ✅ FIX: non usare !plat / !plng
+          
           if (plat == null || plng == null) return null;
 
           let tipo: PuntoEmergenza["tipo"] = "unknown";
