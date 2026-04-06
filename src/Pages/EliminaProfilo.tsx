@@ -4,11 +4,12 @@ import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 import { useAuth } from "../Pages/AuthContext"; // aggiusta il path se serve
+const API_URL = import.meta.env.VITE_API_URL;
 
 export function EliminaProfilo() {
   const [loading, setLoading] = useState(false);
   const [motivo, setMotivo] = useState("");
-  const API_URL = import.meta.env.VITE_API_URL;
+
 
   const navigate = useNavigate();
   const { logout } = useAuth(); 
