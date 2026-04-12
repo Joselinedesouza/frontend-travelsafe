@@ -205,3 +205,27 @@ export async function fetchUserNotifications(token: string): Promise<Notifica[]>
   }
   return [];
 }
+//---- verify email -----
+export async function verifyEmail(token: string): Promise<string> {
+  const res = await fetch(
+    `${BASE_URL}/auth/verify-email?token=${encodeURIComponent(token)}`,
+    {
+      method: "GET",
+    }
+  );
+
+  if (res.ok) {
+    return await res.text();
+  }
+
+  let errorMsg = await res.text();
+
+  try {
+    const errObj = JSON.parse(errorMsg);
+    if (errObj.message) errorMsg = errObj.message;
+  } catch {
+    // se non è JSON, lascia il testo così
+  }
+
+  throw new Error(errorMsg || "Verifica email non riuscita");
+}

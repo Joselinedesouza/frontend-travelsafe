@@ -1,81 +1,92 @@
 import { useEffect, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { verifyEmail } from "../Service/Api"; // cambia il path se il tuo file api è altrove
 
-const BaseUrl=  `${import.meta.env.VITE_API_URL}`
 
-export const VerifyEmail = () => {
+ export const VerifyEmail = () => {
   const [searchParams] = useSearchParams();
   const token = searchParams.get("token");
+  const navigate = useNavigate();
 
   const [loading, setLoading] = useState(true);
   const [success, setSuccess] = useState(false);
   const [message, setMessage] = useState("");
 
   useEffect(() => {
-    const verifyEmail = async () => {
+    const runVerification = async () => {
       if (!token) {
-        setMessage("Token mancante nella URL.");
         setSuccess(false);
+        setMessage("Token mancante.");
         setLoading(false);
         return;
       }
 
       try {
-        const response = await fetch(
-          `${BaseUrl}/api/auth/verify-email?token=${token}`,
-          {
-            method: "GET",
-          }
-        );
+        const resultMessage = await verifyEmail(token);
+        setSuccess(true);
+        setMessage(resultMessage || "Email verificata con successo.");
 
-        const text = await response.text();
-
-        if (response.ok) {
-          setSuccess(true);
-          setMessage(text || "Email verificata con successo.");
-        } else {
-          setSuccess(false);
-          setMessage(text || "Verifica email non riuscita.");
-        }
-      } catch (error) {
+        setTimeout(() => {
+          navigate("/home");
+        }, 2000);
+      } catch (error: any) {
         setSuccess(false);
-        setMessage("Errore di connessione al server.");
+        setMessage(error.message || "Verifica email non riuscita.");
       } finally {
         setLoading(false);
       }
     };
 
-    verifyEmail();
-  }, [token]);
+    runVerification();
+  }, [token, navigate]);
 
+ return (
+  <div className="verify-page">
+    <div className="verify-box">
 
-return (
-  <div className="container d-flex justify-content-center align-items-center min-vh-100">
-    <div className="card shadow p-4 text-center" style={{ maxWidth: "400px", width: "100%" }}>
-
-      {loading ? (
+      {loading && (
         <>
-          <div className="spinner-circle mb-3"></div>
-          <h4>Verifica in corso...</h4>
-          <p className="text-muted">Attendi qualche secondo</p>
+          <div className="verify-spinner"></div>
+          <h2 className="verify-title">Verifica in corso...</h2>
+          <p className="verify-text">
+            Stiamo verificando la tua email
+          </p>
         </>
-      ) : success ? (
+      )}
+
+      {!loading && success && (
         <>
-          <div className="success-circle mb-3">
-            ✓
+          <div className="verify-success-circle">
+            <span className="verify-check">✓</span>
           </div>
 
-          <h4>Email verificata</h4>
-          <p className="text-muted">Reindirizzamento in corso...</p>
+          <h2 className="verify-title">
+            Email verificata
+          </h2>
+
+          <p className="verify-text">
+            Accesso consentito
+          </p>
+
+          <p className="verify-text">
+            Reindirizzamento...
+          </p>
         </>
-      ) : (
+      )}
+
+      {!loading && !success && (
         <>
-          <div className="error-circle mb-3">
-            ✕
+          <div className="verify-error-circle">
+            <span className="verify-cross">✕</span>
           </div>
 
-          <h4>Verifica fallita</h4>
-          <p>{message}</p>
+          <h2 className="verify-title">
+            Verifica fallita
+          </h2>
+
+          <p className="verify-text">
+            {message}
+          </p>
         </>
       )}
 
