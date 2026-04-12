@@ -7,6 +7,7 @@ import Home from "./Pages/Home";
 
 import { Login } from "./Pages/Login";
 import { Register } from "./Pages/Register";
+import { VerifyEmail } from "./Pages/VerifyEmail";
 import { ForgotPassword } from "./Pages/ForgotPassword";
 import { ResetPassword } from "./Pages/ResetPassword";
 
@@ -87,6 +88,7 @@ function App() {
         {/* Pubbliche */}
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/verify-email" element={<VerifyEmail />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/chi-siamo" element={<ChiSiamo />} />
